@@ -15,6 +15,7 @@ import (
 
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -84,6 +85,32 @@ func (la *LogoApp) setupUI() {
 	// Turtle status label
 	la.turtleStatus = widget.NewLabel("Turtle status: ")
 
+	// Create delay slider
+	delaySlider := widget.NewSlider(0, 1000)
+	delaySlider.Step = 50
+	delaySlider.Value = 300
+
+	// Create delay label with initial value
+	delayLabel := widget.NewLabel(fmt.Sprintf("Render Delay: %d ms", 300))
+
+	delaySlider.OnChanged = func(value float64) {
+		rendering.SetRenderDelay(time.Duration(value) * time.Millisecond)
+		// Update label with current ms value
+		delayLabel.SetText(fmt.Sprintf("Render Delay: %d ms", int(value)))
+	}
+
+	// Turtle status panel
+	turtleStatusPanel := container.NewBorder(
+		nil,             // Top
+		container.NewVBox(
+			delayLabel,
+			delaySlider,
+		),   // Bottom
+		nil,             // Left
+		nil,             // Right
+		la.turtleStatus, // Center
+	)
+
 	// Left panel with command input and output log
 	leftPanel := container.NewBorder(
 		nil,         // Top
@@ -100,15 +127,6 @@ func (la *LogoApp) setupUI() {
 		nil,          // Left
 		nil,          // Right
 		la.outputLog, // Center
-	)
-
-	// Turtle status panel
-	turtleStatusPanel := container.NewBorder(
-		nil,             // Top
-		nil,             // Bottom
-		nil,             // Left
-		nil,             // Right
-		la.turtleStatus, // Center
 	)
 
 	// Left side container (commands and output)

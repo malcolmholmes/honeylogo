@@ -22,6 +22,14 @@ const (
 	CanvasCentreY = CanvasHeight / 2
 )
 
+// Global variable to control rendering delay
+var renderDelay time.Duration = 300 * time.Millisecond
+
+// SetRenderDelay allows external control of rendering delay
+func SetRenderDelay(delay time.Duration) {
+	renderDelay = delay
+}
+
 // drawLine draws a line between two points on an image
 func DrawLine(img *image.RGBA, x0, y0, x1, y1 int, lineColor color.Color) {
 	dx := abs(x1 - x0)
@@ -277,7 +285,7 @@ func (r *DefaultRenderer) RenderDrawing(drawing *drawing.Drawing) {
 		// Draw turtle sprite at the end of the line
 		DrawTurtle(r.image, x1, y1, point.Angle)
 		r.canvas.Refresh()
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(renderDelay)
 
 		x0, y0 = x1, y1
 	}
