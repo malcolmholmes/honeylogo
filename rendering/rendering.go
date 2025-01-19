@@ -58,7 +58,6 @@ func DrawTurtle(img *image.RGBA, x, y int, angle float64) {
 	// Turtle size
 	size := 10
 
-	angle = angle - 90
 	// Calculate turtle triangle points
 	radians := (angle - 90) * math.Pi / 180
 	x1 := x + int(float64(size)*math.Cos(radians))
@@ -167,6 +166,61 @@ func (r *DefaultRenderer) SetCanvas(canvas *canvas.Image) {
 	}
 }
 
+// saveTurtleBackground saves the area where the turtle will be drawn
+func saveTurtleBackground(img *image.RGBA, x, y, size int) []color.Color {
+	// Calculate the total area to save
+	totalSize := (2*size + 1) * (2*size + 1)
+	background := make([]color.Color, totalSize)
+
+	// Track actual saved pixels
+	savedPixels := 0
+
+	// Save background pixels within image bounds
+	for dx := -size; dx <= size; dx++ {
+		for dy := -size; dy <= size; dy++ {
+			newX := x + dx
+			newY := y + dy
+
+			// Check if pixel is within image bounds
+			if newX >= 0 && newX < img.Bounds().Dx() &&
+				newY >= 0 && newY < img.Bounds().Dy() {
+				// Safely index into background slice
+				if savedPixels < totalSize {
+					background[savedPixels] = img.At(newX, newY)
+					savedPixels++
+				}
+			}
+		}
+	}
+
+	// Trim background to actual saved pixels
+	return background[:savedPixels]
+}
+
+// restoreTurtleBackground restores the background after drawing the turtle
+func restoreTurtleBackground(img *image.RGBA, x, y, size int, background []color.Color) {
+	// Track restored pixels
+	savedPixels := 0
+
+	// Restore background pixels within image bounds
+	for dx := -size; dx <= size; dx++ {
+		for dy := -size; dy <= size; dy++ {
+			newX := x + dx
+			newY := y + dy
+
+			// Check if pixel is within image bounds
+			if newX >= 0 && newX < img.Bounds().Dx() &&
+				newY >= 0 && newY < img.Bounds().Dy() {
+				// Safely index into background slice
+				if savedPixels < len(background) {
+					img.Set(newX, newY, background[savedPixels])
+					savedPixels++
+				}
+			}
+		}
+	}
+}
+
 // RenderDrawing renders a drawing on the canvas
 func (r *DefaultRenderer) RenderDrawing(drawing *drawing.Drawing) {
 	if drawing == nil || len(drawing.Points()) == 0 {
@@ -188,9 +242,19 @@ func (r *DefaultRenderer) RenderDrawing(drawing *drawing.Drawing) {
 	centreX := r.width / 2
 	centreY := r.height / 2
 
+	// Turtle sprite size
+	turtleSize := 10
+
 	// Render the drawing points
 	x0, y0 := int(drawing.Points()[0].X+float64(centreX)), int(float64(centreY)-drawing.Points()[0].Y)
+
+	// Save background where turtle will be drawn
+	background := saveTurtleBackground(r.image, x0, y0, turtleSize)
+
 	for i, point := range drawing.Points()[1:] {
+		// Restore background to remove turtle sprite
+		restoreTurtleBackground(r.image, x0, y0, turtleSize, background)
+
 		x1, y1 := int(point.X+float64(centreX)), int(float64(centreY)-point.Y)
 
 		// Detailed color logging
@@ -204,8 +268,17 @@ func (r *DefaultRenderer) RenderDrawing(drawing *drawing.Drawing) {
 			continue
 		}
 
+		// Draw the line
 		DrawLine(r.image, x0, y0, x1, y1, point.PenColor)
-		time.Sleep(300 * time.Millisecond)
+
+		// Save background where turtle will be drawn
+		background = saveTurtleBackground(r.image, x1, y1, turtleSize)
+
+		// Draw turtle sprite at the end of the line
+		DrawTurtle(r.image, x1, y1, point.Angle)
+		r.canvas.Refresh()
+		time.Sleep(1000 * time.Millisecond)
+
 		r.canvas.Refresh()
 
 		x0, y0 = x1, y1
