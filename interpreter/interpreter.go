@@ -8,6 +8,7 @@ import (
 	"github.com/honeylogo/logo/ast"
 	"github.com/honeylogo/logo/parser"
 	"github.com/honeylogo/logo/turtle"
+	"github.com/honeylogo/logo/drawing"
 )
 
 // Interpreter represents the Logo language interpreter
@@ -29,11 +30,11 @@ func New() *Interpreter {
 }
 
 // Execute runs a Logo command string
-func (i *Interpreter) Execute(cmdStr string) error {
+func (i *Interpreter) Execute(cmdStr string) (*drawing.Drawing, error) {
 	// Parse the input into an AST program
 	program, err := parser.ParseProgram(cmdStr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Execute the program

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"image/color"
 	"strings"
-
-	"github.com/rs/zerolog/log"
 )
 
 // Point represents a 2D point with complete rendering information
@@ -14,8 +12,8 @@ type Point struct {
 	Y        float64
 	PenDown  bool
 	PenColor color.Color
-	Angle    float64  // Turtle direction at this point
-	PenSize  float64  // Pen size at this point
+	Angle    float64 // Turtle direction at this point
+	PenSize  float64 // Pen size at this point
 }
 
 // GetX returns the X coordinate of the point
@@ -32,12 +30,12 @@ func (p Point) GetY() float64 {
 type Drawing struct {
 	// Sequence of points with rendering instructions
 	points []Point
-	
+
 	// Current drawing state
-	currentPenDown bool
+	currentPenDown  bool
 	currentPenColor color.Color
-	currentAngle float64
-	currentPenSize float64
+	currentAngle    float64
+	currentPenSize  float64
 }
 
 // NewDrawing creates a new Drawing starting at the origin
@@ -45,17 +43,17 @@ func NewDrawing() *Drawing {
 	return &Drawing{
 		points: []Point{
 			{
-				X:        0, 
-				Y:        0, 
-				PenDown:  true, 
+				X:        0,
+				Y:        0,
+				PenDown:  true,
 				PenColor: color.Black,
-				Angle:    0,  // Start facing up
+				Angle:    0,   // Start facing up
 				PenSize:  1.0, // Default pen size
 			},
 		},
 		currentPenDown:  true,
 		currentPenColor: color.Black,
-		currentAngle:    0, // Start facing up
+		currentAngle:    0,   // Start facing up
 		currentPenSize:  1.0, // Default pen size
 	}
 }
@@ -72,7 +70,6 @@ func (d *Drawing) Get(i int) Point {
 
 // Add adds a point to the drawing with current state
 func (d *Drawing) Add(x, y float64) {
-	log.Debug().Msgf("phase=draw point: (%.2f, %.2f)", x, y)
 	point := Point{
 		X:        x,
 		Y:        y,
@@ -134,7 +131,7 @@ func (d *Drawing) String() string {
 	if len(d.points) == 0 {
 		return "[]"
 	}
-	
+
 	var sb strings.Builder
 	sb.WriteString("Drawing [\n")
 	for i, pt := range d.points {
@@ -143,12 +140,12 @@ func (d *Drawing) String() string {
 			penState = "Up"
 		}
 		sb.WriteString(fmt.Sprintf(
-			"  Point %d: (%.2f, %.2f) Pen:%s Color:%v Angle:%.2f PenSize:%.2f\n", 
+			"  Point %d: (%.2f, %.2f) Pen:%s Color:%v Angle:%.2f PenSize:%.2f\n",
 			i, pt.X, pt.Y, penState, pt.PenColor, pt.Angle, pt.PenSize,
 		))
 	}
 	sb.WriteString(fmt.Sprintf(
-		"Current State: Angle=%.2f, PenDown=%v, PenColor=%v, PenSize=%.2f\n]", 
+		"Current State: Angle=%.2f, PenDown=%v, PenColor=%v, PenSize=%.2f\n]",
 		d.currentAngle, d.currentPenDown, d.currentPenColor, d.currentPenSize,
 	))
 	return sb.String()

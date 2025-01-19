@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"time"
 
 	"math"
 
+	"fyne.io/fyne/v2/canvas"
 	"github.com/rs/zerolog/log"
 
 	"github.com/honeylogo/logo/drawing"
+	"github.com/honeylogo/logo/turtle"
 )
 
 const (
@@ -21,7 +24,6 @@ const (
 
 // drawLine draws a line between two points on an image
 func DrawLine(img *image.RGBA, x0, y0, x1, y1 int, lineColor color.Color) {
-	log.Debug().Msgf("phase=render line: from=(%d, %d) to=(%d, %d)", x0, y0, x1, y1)
 	dx := abs(x1 - x0)
 	dy := abs(y1 - y0)
 	sx, sy := 1, 1
@@ -52,6 +54,7 @@ func DrawLine(img *image.RGBA, x0, y0, x1, y1 int, lineColor color.Color) {
 
 // drawTurtle draws a simple turtle representation on the image
 func DrawTurtle(img *image.RGBA, x, y int, angle float64) {
+	log.Debug().Msgf("phase=render turtle: at=(%d, %d) angle=%f", x, y, angle)
 	// Turtle size
 	size := 10
 
@@ -85,37 +88,6 @@ func abs(x int) int {
 	return x
 }
 
-// UpdateCanvasFunc is a function type for updating the canvas
-type UpdateCanvasFunc func(img *image.RGBA)
-
-// UpdateCanvas draws the turtle's path on the given image
-func UpdateCanvas(img *image.RGBA, turtle TurtleInterface) {
-	// Draw path
-	drawing := turtle.GetPath()
-	if len(drawing.Points()) > 0 {
-		currentX, currentY := turtle.GetPosition()
-		x0, y0 := int(currentX+CanvasCentreX), int(CanvasCentreY-currentY)
-		for _, point := range drawing.Points() {
-			// Draw line between points
-			x1, y1 := int(point.X+CanvasCentreX), int(CanvasCentreY-point.Y)
-			log.Debug().Msgf("phase=render Drawing line from (%d, %d) to (%d, %d)", x0, y0, x1, y1)
-
-			DrawLine(img, x0, y0, x1, y1, color.Black)
-			x0, y0 = x1, y1
-		}
-
-		// Draw turtle at the end of the last drawn line
-		currentX, currentY = float64(x0), float64(y0)
-		currentAngle := turtle.GetAngle()
-		DrawTurtle(img, x0, y0, currentAngle)
-	} else {
-		// If no path, draw turtle at its current position
-		currentX, currentY := turtle.GetPosition()
-		currentAngle := turtle.GetAngle()
-		DrawTurtle(img, int(currentX+CanvasCentreX), int(CanvasCentreY-currentY), currentAngle)
-	}
-}
-
 // GetTurtleStatus returns a formatted string with turtle status
 func GetTurtleStatus(turtle TurtleInterface) string {
 	x, y := turtle.GetPosition()
@@ -137,19 +109,18 @@ func GetTurtleStatus(turtle TurtleInterface) string {
 type TurtleInterface interface {
 	GetPosition() (float64, float64)
 	GetAngle() float64
-	GetPath() *drawing.Drawing
-	IsPenDown() bool
 	GetColor() color.Color
+	IsPenDown() bool
 }
 
 // TurtleAdapter adapts a turtle to the TurtleInterface
 type TurtleAdapter struct {
-	Turtle TurtleInterface
+	Turtle *turtle.Turtle
 }
 
 // GetPosition returns the turtle's current position
 func (ta *TurtleAdapter) GetPosition() (float64, float64) {
-	return ta.Turtle.GetPosition()
+	return ta.Turtle.GetX(), ta.Turtle.GetY()
 }
 
 // GetAngle returns the turtle's current angle
@@ -157,9 +128,9 @@ func (ta *TurtleAdapter) GetAngle() float64 {
 	return ta.Turtle.GetAngle()
 }
 
-// GetPath converts the turtle's path
-func (ta *TurtleAdapter) GetPath() *drawing.Drawing {
-	return ta.Turtle.GetPath()
+// GetColor returns the turtle's pen color
+func (ta *TurtleAdapter) GetColor() color.Color {
+	return ta.Turtle.GetColor()
 }
 
 // IsPenDown returns whether the pen is down
@@ -167,7 +138,87 @@ func (ta *TurtleAdapter) IsPenDown() bool {
 	return ta.Turtle.IsPenDown()
 }
 
-// GetColor returns the turtle's pen color
-func (ta *TurtleAdapter) GetColor() color.Color {
-	return ta.Turtle.GetColor()
+// Renderer interface for rendering drawings
+type Renderer interface {
+	RenderDrawing(drawing *drawing.Drawing)
+	SetCanvas(canvas *canvas.Image)
+}
+
+// DefaultRenderer implements the Renderer interface
+type DefaultRenderer struct {
+	canvas *canvas.Image
+	image  *image.RGBA
+	width  int
+	height int
+}
+
+// NewRenderer creates a new DefaultRenderer
+func NewRenderer() *DefaultRenderer {
+	return &DefaultRenderer{}
+}
+
+// SetImage sets the canvas for rendering
+func (r *DefaultRenderer) SetCanvas(canvas *canvas.Image) {
+	if canvas != nil {
+		r.canvas = canvas
+		r.image = canvas.Image.(*image.RGBA)
+		r.width = r.image.Bounds().Dx()
+		r.height = r.image.Bounds().Dy()
+	}
+}
+
+// RenderDrawing renders a drawing on the canvas
+func (r *DefaultRenderer) RenderDrawing(drawing *drawing.Drawing) {
+	if drawing == nil || len(drawing.Points()) == 0 {
+		log.Printf("No drawing points to render\n")
+		return
+	}
+
+	// Clear the canvas
+	for x := 0; x < r.width; x++ {
+		for y := 0; y < r.height; y++ {
+			r.image.Set(x, y, color.White)
+		}
+	}
+
+	// Log total number of points
+	log.Printf("Total drawing points: %d", len(drawing.Points()))
+
+	// Calculate canvas center dynamically
+	centreX := r.width / 2
+	centreY := r.height / 2
+
+	// Render the drawing points
+	x0, y0 := int(drawing.Points()[0].X+float64(centreX)), int(float64(centreY)-drawing.Points()[0].Y)
+	for i, point := range drawing.Points()[1:] {
+		x1, y1 := int(point.X+float64(centreX)), int(float64(centreY)-point.Y)
+
+		// Detailed color logging
+		red, green, blue, alpha := point.PenColor.RGBA()
+		log.Printf("DRAWING LINE %d: from=(%d, %d) to=(%d, %d) color=RGBA(%d,%d,%d,%d) penDown=%v",
+			i, x0, y0, x1, y1, red, green, blue, alpha, point.PenDown)
+
+		// Verify line drawing
+		if x0 == x1 && y0 == y1 {
+			log.Printf("SKIPPING LINE: Same start and end point")
+			continue
+		}
+
+		DrawLine(r.image, x0, y0, x1, y1, point.PenColor)
+		time.Sleep(300 * time.Millisecond)
+		r.canvas.Refresh()
+
+		x0, y0 = x1, y1
+	}
+
+	// Verify canvas content
+	nonWhitePixels := 0
+	for x := 0; x < r.width; x++ {
+		for y := 0; y < r.height; y++ {
+			if r.image.At(x, y) != color.White {
+				nonWhitePixels++
+			}
+		}
+	}
+	log.Printf("Non-white pixels drawn: %d", nonWhitePixels)
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/honeylogo/logo/drawing"
 	"github.com/honeylogo/logo/turtle"
+	"github.com/rs/zerolog/log"
 )
 
 // Context represents the execution environment
@@ -382,18 +383,21 @@ func NewProgram(commands []Command) *Program {
 	}
 }
 
-// Execute runs the entire program
-func (p *Program) Execute(ctx *Context) error {
+// Execute runs the entire program and returns the resulting Drawing
+func (p *Program) Execute(ctx *Context) (*drawing.Drawing, error) {
 	for _, cmd := range p.Commands {
-		// Log the command being executed
-		fmt.Printf("Executing command: %T\n", cmd)
-
-		// Execute the command
 		if err := cmd.Execute(ctx); err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+
+	// Log each point individually
+	for i, point := range ctx.Drawing.Points() {
+		log.Debug().Msgf("phase=execute point %d: (%.2f, %.2f) penDown=%v penColor=%v angle=%.2f penSize=%.2f",
+			i, point.X, point.Y, point.PenDown, point.PenColor, point.Angle, point.PenSize)
+	}
+
+	return ctx.Drawing, nil
 }
 
 func (p *Program) String() string {

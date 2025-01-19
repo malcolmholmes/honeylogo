@@ -29,17 +29,19 @@ type LogoApp struct {
 	app          fyne.App
 	window       fyne.Window
 	interp       *interpreter.Interpreter
-	drawingArea  *canvas.Image
+	canvas       *canvas.Image
 	cmdInput     *widget.Entry
 	outputLog    *widget.Entry
 	turtleStatus *widget.Label
 	delayInput   *widget.Entry
+	renderer     rendering.Renderer
 }
 
 func NewLogoApp() *LogoApp {
 	a := &LogoApp{
-		app:    app.New(),
-		interp: interpreter.New(),
+		app:      app.New(),
+		interp:   interpreter.New(),
+		renderer: rendering.NewRenderer(),
 	}
 
 	// Start turtle in the middle of the screen, pointing up
@@ -62,9 +64,9 @@ func (la *LogoApp) setupUI() {
 	currentAngle := la.interp.GetTurtle().GetAngle()
 	rendering.DrawTurtle(img, int(currentX), int(currentY), currentAngle)
 
-	la.drawingArea = canvas.NewImageFromImage(img)
-	la.drawingArea.SetMinSize(fyne.NewSize(canvasWidth, canvasHeight))
-	la.drawingArea.FillMode = canvas.ImageFillOriginal
+	la.canvas = canvas.NewImageFromImage(img)
+	la.canvas.SetMinSize(fyne.NewSize(canvasWidth, canvasHeight))
+	la.canvas.FillMode = canvas.ImageFillOriginal
 
 	// Create input field for Logo commands
 	la.cmdInput = widget.NewMultiLineEntry()
@@ -125,56 +127,34 @@ func (la *LogoApp) setupUI() {
 
 	// Main window layout
 	content := container.NewHSplit(
-		la.drawingArea,
 		leftSideContainerWithTurtleStatus,
+		la.canvas,
 	)
 
 	la.window.SetContent(content)
-}
-
-func (la *LogoApp) updateCanvas() {
-	// Create a new image to draw on
-	img := image.NewRGBA(image.Rect(0, 0, canvasWidth, canvasHeight))
-
-	// Get turtle from interpreter and adapt it
-	currentTurtle := la.interp.GetTurtle()
-	turtleAdapter := &rendering.TurtleAdapter{Turtle: currentTurtle}
-
-	// Update canvas using rendering package
-	rendering.UpdateCanvas(img, turtleAdapter)
-
-	// Update canvas image
-	la.drawingArea.Image = img
-	la.drawingArea.Refresh()
-
-	// Update turtle status
-	la.turtleStatus.SetText(rendering.GetTurtleStatus(turtleAdapter))
 }
 
 func (la *LogoApp) executeCommands() {
 	// Get the text from the input
 	commands := la.cmdInput.Text
 
-	// Split commands by newline
-	for _, cmd := range strings.Split(commands, "\n") {
-		cmd = strings.TrimSpace(cmd)
-		if cmd == "" || strings.HasPrefix(cmd, ";") { // Skip empty lines and comments
-			continue
-		}
+	// Create a new image
+	la.canvas.Image = image.NewRGBA(image.Rect(0, 0, rendering.CanvasWidth, rendering.CanvasHeight))
 
-		// Execute the command
-		err := la.interp.Execute(cmd)
-		if err != nil {
-			// Log error to output log
-			la.outputLog.Append("Error: " + err.Error() + "\n")
-		} else {
-			// Log successful command
-			la.outputLog.Append("> " + cmd + "\n")
-		}
+	// Execute the command
+	drawing, err := la.interp.Execute(commands)
+	if err != nil {
+		// Log error to output log
+		la.outputLog.Append("Error: " + err.Error() + "\n")
+	} else {
+		// Log successful command
+		la.outputLog.Append("> " + commands + "\n")
 	}
+	// Render the drawing
+	log.Debug().Msgf("phase=main render %d drawing points", len(drawing.Points()))
 
-	// Update canvas
-	la.updateCanvas()
+	la.renderer.SetCanvas(la.canvas)
+	la.renderer.RenderDrawing(drawing)
 }
 
 func (la *LogoApp) Run() {
@@ -188,7 +168,7 @@ func init() {
 		Out:        os.Stderr,
 		TimeFormat: "15:04:05",
 		FormatLevel: func(i interface{}) string {
-			return ""  // Remove log level
+			return "" // Remove log level
 		},
 		FormatMessage: func(i interface{}) string {
 			// Check if the message starts with a phase
@@ -204,10 +184,10 @@ func init() {
 			return msg
 		},
 		FormatFieldName: func(i interface{}) string {
-			return ""  // Remove field names
+			return "" // Remove field names
 		},
 		FormatFieldValue: func(i interface{}) string {
-			return ""  // Remove field values
+			return "" // Remove field values
 		},
 	}).Level(zerolog.DebugLevel)
 }

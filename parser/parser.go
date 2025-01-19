@@ -106,8 +106,6 @@ func buildProgram(tokens []Token) (*ast.Program, error) {
 		Commands: []ast.Command{},
 	}
 
-	log.Debug().Msgf("phase=parse starting program parsing")
-
 	for i := 0; i < len(tokens); i++ {
 		cmd, consumed, err := parseCommand(tokens, i)
 		if err != nil {

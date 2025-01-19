@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"github.com/honeylogo/logo/drawing"
-	"github.com/rs/zerolog/log"
 )
 
 // Turtle represents the state and behavior of a Logo turtle
@@ -22,9 +21,9 @@ type Turtle struct {
 // New creates a new Turtle
 func New() *Turtle {
 	return &Turtle{
-		x:        0,   // Start at origin
+		x:        0, // Start at origin
 		y:        0,
-		angle:    0,   // Start facing up
+		angle:    0, // Start facing up
 		penDown:  true,
 		penColor: color.Black,
 		penSize:  1.0, // Default pen size
@@ -37,12 +36,9 @@ func (t *Turtle) Forward(distance float64) {
 	radians := (t.angle) * math.Pi / 180
 	newX := t.x + distance*math.Cos(radians)
 	newY := t.y + distance*math.Sin(radians)
-	log.Debug().Msgf("phase=exec pos: old=(%.2f, %.2f) angle=%.2f new=(%.2f, %.2f)", t.x, t.y, t.angle, newX, newY)
 
 	if t.penDown {
-		log.Debug().Msgf("phase=exec action: add forward")
 		t.path.Add(newX, newY)
-		log.Debug().Msgf("phase=exec path: %v", t.path)
 	}
 
 	t.x = newX
