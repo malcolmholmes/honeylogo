@@ -277,21 +277,8 @@ func (r *DefaultRenderer) RenderDrawing(drawing *drawing.Drawing) {
 		// Draw turtle sprite at the end of the line
 		DrawTurtle(r.image, x1, y1, point.Angle)
 		r.canvas.Refresh()
-		time.Sleep(1000 * time.Millisecond)
-
-		r.canvas.Refresh()
+		time.Sleep(300 * time.Millisecond)
 
 		x0, y0 = x1, y1
 	}
-
-	// Verify canvas content
-	nonWhitePixels := 0
-	for x := 0; x < r.width; x++ {
-		for y := 0; y < r.height; y++ {
-			if r.image.At(x, y) != color.White {
-				nonWhitePixels++
-			}
-		}
-	}
-	log.Printf("Non-white pixels drawn: %d", nonWhitePixels)
 }

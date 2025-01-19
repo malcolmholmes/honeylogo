@@ -89,6 +89,8 @@ func NewLeftCommand(angle float64) *LeftCommand {
 func (lc *LeftCommand) Execute(ctx *Context) error {
 	ctx.Turtle.Left(lc.Angle)
 	ctx.Drawing.SetAngle(ctx.Turtle.GetAngle())
+	currentX, currentY := ctx.Turtle.GetPosition()
+	ctx.Drawing.Add(currentX, currentY)
 	return nil
 }
 
@@ -110,6 +112,8 @@ func NewRightCommand(angle float64) *RightCommand {
 func (rc *RightCommand) Execute(ctx *Context) error {
 	ctx.Turtle.Right(rc.Angle)
 	ctx.Drawing.SetAngle(ctx.Turtle.GetAngle())
+	currentX, currentY := ctx.Turtle.GetPosition()
+	ctx.Drawing.Add(currentX, currentY)
 	return nil
 }
 

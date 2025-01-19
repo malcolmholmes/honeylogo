@@ -2,7 +2,6 @@ package turtle
 
 import (
 	"image/color"
-	"log"
 	"math"
 
 	"github.com/honeylogo/logo/drawing"
@@ -34,7 +33,6 @@ func New() *Turtle {
 
 // Forward moves the turtle forward in its current direction
 func (t *Turtle) Forward(distance float64) {
-	log.Printf("ANGLE: %f", t.angle)
 	radians := (90 - t.angle) * math.Pi / 180
 	newX := t.x + distance*math.Cos(radians)
 	newY := t.y + distance*math.Sin(radians)
