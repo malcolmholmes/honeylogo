@@ -89,7 +89,6 @@ func (la *LogoApp) setupUI() {
 	delaySlider := widget.NewSlider(0, 1000)
 	delaySlider.Step = 50
 	delaySlider.Value = 300
-
 	// Create delay label with initial value
 	delayLabel := widget.NewLabel(fmt.Sprintf("Render Delay: %d ms", 300))
 
@@ -101,11 +100,11 @@ func (la *LogoApp) setupUI() {
 
 	// Turtle status panel
 	turtleStatusPanel := container.NewBorder(
-		nil,             // Top
+		nil, // Top
 		container.NewVBox(
 			delayLabel,
 			delaySlider,
-		),   // Bottom
+		), // Bottom
 		nil,             // Left
 		nil,             // Right
 		la.turtleStatus, // Center

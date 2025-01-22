@@ -22,12 +22,16 @@ const (
 	CanvasCentreY = CanvasHeight / 2
 )
 
-// Global variable to control rendering delay
-var renderDelay time.Duration = 300 * time.Millisecond
+// Global channel for dynamic delay control
+var renderDelayChan = make(chan time.Duration, 1)
 
 // SetRenderDelay allows external control of rendering delay
 func SetRenderDelay(delay time.Duration) {
-	renderDelay = delay
+	select {
+	case <-renderDelayChan:
+	default:
+	}
+	renderDelayChan <- delay
 }
 
 // drawLine draws a line between two points on an image
@@ -253,6 +257,9 @@ func (r *DefaultRenderer) RenderDrawing(drawing *drawing.Drawing) {
 	// Turtle sprite size
 	turtleSize := 10
 
+	// Initial delay
+	currentDelay := 300 * time.Millisecond
+
 	// Render the drawing points
 	x0, y0 := int(drawing.Points()[0].X+float64(centreX)), int(float64(centreY)-drawing.Points()[0].Y)
 
@@ -260,6 +267,13 @@ func (r *DefaultRenderer) RenderDrawing(drawing *drawing.Drawing) {
 	background := saveTurtleBackground(r.image, x0, y0, turtleSize)
 
 	for i, point := range drawing.Points()[1:] {
+		// Check for new delay non-blockingly
+		select {
+		case newDelay := <-renderDelayChan:
+			currentDelay = newDelay
+		default:
+		}
+
 		// Restore background to remove turtle sprite
 		restoreTurtleBackground(r.image, x0, y0, turtleSize, background)
 
@@ -271,13 +285,10 @@ func (r *DefaultRenderer) RenderDrawing(drawing *drawing.Drawing) {
 			i, x0, y0, x1, y1, red, green, blue, alpha, point.PenDown)
 
 		// Verify line drawing
-		if x0 == x1 && y0 == y1 {
-			log.Printf("SKIPPING LINE: Same start and end point")
-			continue
+		if x0 != x1 || y0 != y1 {
+			// Draw the line
+			DrawLine(r.image, x0, y0, x1, y1, point.PenColor)
 		}
-
-		// Draw the line
-		DrawLine(r.image, x0, y0, x1, y1, point.PenColor)
 
 		// Save background where turtle will be drawn
 		background = saveTurtleBackground(r.image, x1, y1, turtleSize)
@@ -285,7 +296,9 @@ func (r *DefaultRenderer) RenderDrawing(drawing *drawing.Drawing) {
 		// Draw turtle sprite at the end of the line
 		DrawTurtle(r.image, x1, y1, point.Angle)
 		r.canvas.Refresh()
-		time.Sleep(renderDelay)
+
+		// Dynamic delay
+		time.Sleep(currentDelay)
 
 		x0, y0 = x1, y1
 	}
