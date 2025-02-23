@@ -12,7 +12,7 @@ import (
 type CommandDefinition struct {
 	Aliases       []string
 	RequiresValue bool
-	CreateCommand func(float64) ast.Command
+	CreateCommand func(float32) ast.Command
 }
 
 // Command definitions mapping
@@ -20,51 +20,51 @@ var commandDefinitions = map[string]CommandDefinition{
 	"forward": {
 		Aliases:       []string{"fd"},
 		RequiresValue: true,
-		CreateCommand: func(val float64) ast.Command { return ast.NewForwardCommand(val) },
+		CreateCommand: func(val float32) ast.Command { return ast.NewForwardCommand(val) },
 	},
 	"backward": {
 		Aliases:       []string{"bk"},
 		RequiresValue: true,
-		CreateCommand: func(val float64) ast.Command { return ast.NewBackwardCommand(val) },
+		CreateCommand: func(val float32) ast.Command { return ast.NewBackwardCommand(val) },
 	},
 	"left": {
 		Aliases:       []string{"lt"},
 		RequiresValue: true,
-		CreateCommand: func(val float64) ast.Command { return ast.NewLeftCommand(val) },
+		CreateCommand: func(val float32) ast.Command { return ast.NewLeftCommand(val) },
 	},
 	"right": {
 		Aliases:       []string{"rt"},
 		RequiresValue: true,
-		CreateCommand: func(val float64) ast.Command { return ast.NewRightCommand(val) },
+		CreateCommand: func(val float32) ast.Command { return ast.NewRightCommand(val) },
 	},
 	"setx": {
 		RequiresValue: true,
-		CreateCommand: func(val float64) ast.Command { return ast.NewSetXCommand(val) },
+		CreateCommand: func(val float32) ast.Command { return ast.NewSetXCommand(val) },
 	},
 	"sety": {
 		RequiresValue: true,
-		CreateCommand: func(val float64) ast.Command { return ast.NewSetYCommand(val) },
+		CreateCommand: func(val float32) ast.Command { return ast.NewSetYCommand(val) },
 	},
 	"setheading": {
 		Aliases:       []string{"seth"},
 		RequiresValue: true,
-		CreateCommand: func(val float64) ast.Command { return ast.NewSetHeadingCommand(val) },
+		CreateCommand: func(val float32) ast.Command { return ast.NewSetHeadingCommand(val) },
 	},
 	"setpensize": {
 		Aliases:       []string{"setps"},
 		RequiresValue: true,
-		CreateCommand: func(val float64) ast.Command { return ast.NewSetPenSizeCommand(val) },
+		CreateCommand: func(val float32) ast.Command { return ast.NewSetPenSizeCommand(val) },
 	},
 	"penup": {
 		Aliases:       []string{"pu"},
-		CreateCommand: func(_ float64) ast.Command { return ast.NewPenUpCommand() },
+		CreateCommand: func(_ float32) ast.Command { return ast.NewPenUpCommand() },
 	},
 	"pendown": {
 		Aliases:       []string{"pd"},
-		CreateCommand: func(_ float64) ast.Command { return ast.NewPenDownCommand() },
+		CreateCommand: func(_ float32) ast.Command { return ast.NewPenDownCommand() },
 	},
 	"home": {
-		CreateCommand: func(_ float64) ast.Command { return ast.NewHomeCommand() },
+		CreateCommand: func(_ float32) ast.Command { return ast.NewHomeCommand() },
 	},
 }
 
@@ -149,7 +149,7 @@ func parseCommand(tokens []Token, start int) (ast.Command, int, error) {
 				return nil, 0, fmt.Errorf("%s command requires a number argument", tokens[start].Value)
 			}
 			value, _ := strconv.ParseFloat(tokens[start+1].Value, 64)
-			return def.CreateCommand(value), 1, nil
+			return def.CreateCommand(float32(value)), 1, nil
 		}
 
 		// Handle commands without a value

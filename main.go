@@ -9,6 +9,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/honeylogo/logo/ast"
+	"github.com/honeylogo/logo/parser"
 	"github.com/honeylogo/logo/turtle"
 
 	"fmt"
@@ -81,12 +83,16 @@ func main() {
 	t.Speed(10)
 	executeButton := widget.NewButton("Execute", func() {
 
-		for j := 0; j < 60; j++ {
-			for i := 0; i < 4; i++ {
-				t.Forward(100)
-				t.Right(90)
-			}
-			t.Right(360 / 60)
+		program := "REPEAT 60 [REPEAT 4 [FORWARD 100\nRIGHT 90] RT 6]"
+
+		ctx := ast.NewContext(t)
+		ast, err := parser.ParseProgram(program)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to parse program")
+		}
+		err = ast.Execute(ctx)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to execute program")
 		}
 	})
 	// Layout
@@ -96,3 +102,7 @@ func main() {
 	// Show and run the application
 	myWindow.ShowAndRun()
 }
+
+/*
+  So, before I wire up a logo interpreter, what else do I need?
+*/

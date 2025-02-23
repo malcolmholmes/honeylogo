@@ -5,23 +5,18 @@ import (
 	"image/color"
 	"strings"
 
-	"github.com/honeylogo/logo/drawing"
 	"github.com/honeylogo/logo/turtle"
-	"github.com/rs/zerolog/log"
 )
 
 // Context represents the execution environment
 type Context struct {
-	Turtle  *turtle.Turtle
-	Drawing *drawing.Drawing
+	Turtle *turtle.Turtle
 }
 
 // NewContext creates a new execution context
-func NewContext() *Context {
-	t := turtle.New()
+func NewContext(t *turtle.Turtle) *Context {
 	return &Context{
-		Turtle:  t,
-		Drawing: drawing.NewDrawing(),
+		Turtle: t,
 	}
 }
 
@@ -33,19 +28,17 @@ type Command interface {
 
 // ForwardCommand moves the turtle forward
 type ForwardCommand struct {
-	Distance float64
+	Distance float32
 }
 
 // NewForwardCommand creates a new ForwardCommand
-func NewForwardCommand(distance float64) *ForwardCommand {
+func NewForwardCommand(distance float32) *ForwardCommand {
 	return &ForwardCommand{Distance: distance}
 }
 
 // Execute moves the turtle forward and updates the drawing
 func (fc *ForwardCommand) Execute(ctx *Context) error {
 	ctx.Turtle.Forward(fc.Distance)
-	currentX, currentY := ctx.Turtle.GetPosition()
-	ctx.Drawing.Add(currentX, currentY)
 	return nil
 }
 
@@ -55,19 +48,17 @@ func (fc *ForwardCommand) String() string {
 
 // BackwardCommand moves the turtle backward
 type BackwardCommand struct {
-	Distance float64
+	Distance float32
 }
 
 // NewBackwardCommand creates a new BackwardCommand
-func NewBackwardCommand(distance float64) *BackwardCommand {
+func NewBackwardCommand(distance float32) *BackwardCommand {
 	return &BackwardCommand{Distance: distance}
 }
 
 // Execute moves the turtle backward and updates the drawing
 func (bc *BackwardCommand) Execute(ctx *Context) error {
 	ctx.Turtle.Backward(bc.Distance)
-	currentX, currentY := ctx.Turtle.GetPosition()
-	ctx.Drawing.Add(currentX, currentY)
 	return nil
 }
 
@@ -77,20 +68,17 @@ func (bc *BackwardCommand) String() string {
 
 // LeftCommand turns the turtle left
 type LeftCommand struct {
-	Angle float64
+	Angle float32
 }
 
 // NewLeftCommand creates a new LeftCommand
-func NewLeftCommand(angle float64) *LeftCommand {
+func NewLeftCommand(angle float32) *LeftCommand {
 	return &LeftCommand{Angle: angle}
 }
 
 // Execute turns the turtle left and updates the drawing
 func (lc *LeftCommand) Execute(ctx *Context) error {
 	ctx.Turtle.Left(lc.Angle)
-	ctx.Drawing.SetAngle(ctx.Turtle.GetAngle())
-	currentX, currentY := ctx.Turtle.GetPosition()
-	ctx.Drawing.Add(currentX, currentY)
 	return nil
 }
 
@@ -100,20 +88,17 @@ func (lc *LeftCommand) String() string {
 
 // RightCommand turns the turtle right
 type RightCommand struct {
-	Angle float64
+	Angle float32
 }
 
 // NewRightCommand creates a new RightCommand
-func NewRightCommand(angle float64) *RightCommand {
+func NewRightCommand(angle float32) *RightCommand {
 	return &RightCommand{Angle: angle}
 }
 
 // Execute turns the turtle right and updates the drawing
 func (rc *RightCommand) Execute(ctx *Context) error {
 	ctx.Turtle.Right(rc.Angle)
-	ctx.Drawing.SetAngle(ctx.Turtle.GetAngle())
-	currentX, currentY := ctx.Turtle.GetPosition()
-	ctx.Drawing.Add(currentX, currentY)
 	return nil
 }
 
@@ -132,7 +117,6 @@ func NewPenUpCommand() *PenUpCommand {
 // Execute lifts the pen and updates the drawing
 func (puc *PenUpCommand) Execute(ctx *Context) error {
 	ctx.Turtle.PenUp()
-	ctx.Drawing.SetPenState(false)
 	return nil
 }
 
@@ -151,7 +135,6 @@ func NewPenDownCommand() *PenDownCommand {
 // Execute lowers the pen and updates the drawing
 func (pdc *PenDownCommand) Execute(ctx *Context) error {
 	ctx.Turtle.PenDown()
-	ctx.Drawing.SetPenState(true)
 	return nil
 }
 
@@ -172,8 +155,7 @@ func NewSetColorCommand(r, g, b uint8) *SetColorCommand {
 // Execute sets the turtle's pen color and updates the drawing
 func (scc *SetColorCommand) Execute(ctx *Context) error {
 	penColor := color.RGBA{R: scc.R, G: scc.G, B: scc.B, A: 255}
-	ctx.Turtle.SetColor(penColor)
-	ctx.Drawing.SetPenColor(penColor)
+	ctx.Turtle.SetPenColor(penColor)
 	return nil
 }
 
@@ -183,18 +165,17 @@ func (scc *SetColorCommand) String() string {
 
 // SetPenSizeCommand sets the turtle's pen size
 type SetPenSizeCommand struct {
-	Size float64
+	Size float32
 }
 
 // NewSetPenSizeCommand creates a new SetPenSizeCommand
-func NewSetPenSizeCommand(size float64) *SetPenSizeCommand {
+func NewSetPenSizeCommand(size float32) *SetPenSizeCommand {
 	return &SetPenSizeCommand{Size: size}
 }
 
 // Execute sets the turtle's pen size
 func (spsc *SetPenSizeCommand) Execute(ctx *Context) error {
 	ctx.Turtle.SetPenSize(spsc.Size)
-	ctx.Drawing.SetPenSize(spsc.Size)
 	return nil
 }
 
@@ -204,19 +185,18 @@ func (spsc *SetPenSizeCommand) String() string {
 
 // SetXCommand sets the x-coordinate of the turtle
 type SetXCommand struct {
-	X float64
+	X float32
 }
 
 // NewSetXCommand creates a new SetXCommand
-func NewSetXCommand(x float64) *SetXCommand {
+func NewSetXCommand(x float32) *SetXCommand {
 	return &SetXCommand{X: x}
 }
 
 // Execute sets the x-coordinate and updates the drawing
 func (sxc *SetXCommand) Execute(ctx *Context) error {
-	_, currentY := ctx.Turtle.GetPosition()
-	ctx.Turtle.SetPosition(sxc.X, currentY)
-	ctx.Drawing.Add(sxc.X, currentY)
+	_, currentY := ctx.Turtle.Position()
+	ctx.Turtle.Goto(sxc.X, currentY)
 	return nil
 }
 
@@ -226,19 +206,18 @@ func (sxc *SetXCommand) String() string {
 
 // SetYCommand sets the y-coordinate of the turtle
 type SetYCommand struct {
-	Y float64
+	Y float32
 }
 
 // NewSetYCommand creates a new SetYCommand
-func NewSetYCommand(y float64) *SetYCommand {
+func NewSetYCommand(y float32) *SetYCommand {
 	return &SetYCommand{Y: y}
 }
 
 // Execute sets the y-coordinate and updates the drawing
 func (syc *SetYCommand) Execute(ctx *Context) error {
-	currentX, _ := ctx.Turtle.GetPosition()
-	ctx.Turtle.SetPosition(currentX, syc.Y)
-	ctx.Drawing.Add(currentX, syc.Y)
+	currentX, _ := ctx.Turtle.Position()
+	ctx.Turtle.Goto(currentX, syc.Y)
 	return nil
 }
 
@@ -248,18 +227,17 @@ func (syc *SetYCommand) String() string {
 
 // SetPositionCommand moves the turtle to a specific position
 type SetPositionCommand struct {
-	X, Y float64
+	X, Y float32
 }
 
 // NewSetPositionCommand creates a new SetPositionCommand
-func NewSetPositionCommand(x, y float64) *SetPositionCommand {
+func NewSetPositionCommand(x, y float32) *SetPositionCommand {
 	return &SetPositionCommand{X: x, Y: y}
 }
 
 // Execute moves the turtle to a specific position and updates the drawing
 func (spc *SetPositionCommand) Execute(ctx *Context) error {
-	ctx.Turtle.SetPosition(spc.X, spc.Y)
-	ctx.Drawing.Add(spc.X, spc.Y)
+	ctx.Turtle.Goto(spc.X, spc.Y)
 	return nil
 }
 
@@ -269,18 +247,17 @@ func (spc *SetPositionCommand) String() string {
 
 // SetHeadingCommand sets the turtle's heading
 type SetHeadingCommand struct {
-	Angle float64
+	Angle float32
 }
 
 // NewSetHeadingCommand creates a new SetHeadingCommand
-func NewSetHeadingCommand(angle float64) *SetHeadingCommand {
+func NewSetHeadingCommand(angle float32) *SetHeadingCommand {
 	return &SetHeadingCommand{Angle: angle}
 }
 
 // Execute sets the turtle's heading and updates the drawing
 func (shc *SetHeadingCommand) Execute(ctx *Context) error {
-	ctx.Turtle.SetAngle(shc.Angle)
-	ctx.Drawing.SetAngle(shc.Angle)
+	ctx.Turtle.SetHeading(shc.Angle)
 	return nil
 }
 
@@ -299,10 +276,7 @@ func NewHomeCommand() *HomeCommand {
 // Execute moves the turtle to the center of the canvas
 func (hc *HomeCommand) Execute(ctx *Context) error {
 	// Reset turtle to the origin (0, 0) and default heading
-	ctx.Turtle.SetPosition(0, 0)
-	ctx.Turtle.SetAngle(0)
-	ctx.Drawing.Add(0, 0)
-	ctx.Drawing.SetAngle(0)
+	ctx.Turtle.Home()
 	return nil
 }
 
@@ -388,20 +362,13 @@ func NewProgram(commands []Command) *Program {
 }
 
 // Execute runs the entire program and returns the resulting Drawing
-func (p *Program) Execute(ctx *Context) (*drawing.Drawing, error) {
+func (p *Program) Execute(ctx *Context) error {
 	for _, cmd := range p.Commands {
 		if err := cmd.Execute(ctx); err != nil {
-			return nil, err
+			return err
 		}
 	}
-
-	// Log each point individually
-	for i, point := range ctx.Drawing.Points() {
-		log.Debug().Msgf("phase=execute point %d: (%.2f, %.2f) penDown=%v penColor=%v angle=%.2f penSize=%.2f",
-			i, point.X, point.Y, point.PenDown, point.PenColor, point.Angle, point.PenSize)
-	}
-
-	return ctx.Drawing, nil
+	return nil
 }
 
 func (p *Program) String() string {

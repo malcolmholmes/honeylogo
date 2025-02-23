@@ -157,10 +157,10 @@ func (t *Turtle) Goto(x, y float32) {
 }
 
 // SetHeading sets the turtle's heading to the specified angle
-func (t *Turtle) SetHeading(angle float64) {
+func (t *Turtle) SetHeading(angle float32) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
-	t.heading = float32(math.Mod(angle, 360))
+	t.heading = float32(math.Mod(float64(angle), 360))
 	t.sprite.SetAngle(t.heading)
 	t.delay()
 }
