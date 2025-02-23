@@ -52,6 +52,14 @@ func NewTurtle(drawing *fyne.Container, width, height float32) *Turtle {
 	}
 }
 
+func (t *Turtle) Resize() {
+	size := t.drawing.Size()
+	t.home = fyne.NewPos(size.Width/2, size.Height/2)
+	t.pos = t.home
+	t.heading = t.homeHeading
+	t.sprite.Move(t.home)
+}
+
 // Forward moves the turtle forward by the specified distance
 func (t *Turtle) Forward(distance float32) {
 	t.mutex.Lock()

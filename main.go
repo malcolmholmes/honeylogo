@@ -3,6 +3,7 @@ package main
 import (
 	"image/color"
 	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -75,15 +76,18 @@ func main() {
 	myWindow := myApp.NewWindow("HoneyLogo")
 
 	// Set the window size
-	myWindow.Resize(fyne.NewSize(800, 600))
+	myWindow.Resize(fyne.NewSize(canvasWidth, canvasHeight))
 
 	drawing := container.NewWithoutLayout()
 
-	t := turtle.NewTurtle(drawing, 800, 600)
+	t := turtle.NewTurtle(drawing, canvasWidth, canvasHeight)
 	t.Speed(10)
+	codeBox := widget.NewMultiLineEntry()
+	codeBox.SetPlaceHolder("Enter Logo commands...")
+	codeBox.Resize(fyne.NewSize(400, 400))
 	executeButton := widget.NewButton("Execute", func() {
 
-		program := "REPEAT 60 [REPEAT 4 [FORWARD 100\nRIGHT 90] RT 6]"
+		program := codeBox.Text
 
 		ctx := ast.NewContext(t)
 		ast, err := parser.ParseProgram(program)
@@ -95,10 +99,23 @@ func main() {
 			log.Fatal().Err(err).Msg("Failed to execute program")
 		}
 	})
-	// Layout
-	content := container.NewBorder(nil, executeButton, nil, nil, drawing)
-	myWindow.SetContent(content)
 
+	codePanel := container.NewBorder(nil, executeButton, nil, nil, codeBox)
+	outputBox := widget.NewMultiLineEntry()
+	outputBox.Disable()
+	outputBox.Resize(fyne.NewSize(400, 400))
+	outputPanel := container.NewBorder(nil, nil, nil, nil, outputBox)
+
+	leftContainer := container.NewVSplit(codePanel, outputPanel)
+	leftContainer.Resize(fyne.NewSize(400, 800))
+	content := container.NewHSplit(leftContainer, drawing)
+	content.Refresh()
+	drawing.Refresh()
+	myWindow.SetContent(content)
+	go func() {
+		time.Sleep(300 * time.Millisecond) // Wait for rendering
+		t.Resize()
+	}()
 	// Show and run the application
 	myWindow.ShowAndRun()
 }
