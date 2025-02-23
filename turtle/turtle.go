@@ -1,136 +1,215 @@
+// Package turtle provides a Go implementation of the Python turtle graphics library
 package turtle
 
 import (
 	"image/color"
 	"math"
+	"sync"
+	"time"
 
-	"github.com/honeylogo/logo/drawing"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 )
 
-// Turtle represents the state and behavior of a Logo turtle
+// Turtle represents a turtle graphics cursor
 type Turtle struct {
-	x        float64
-	y        float64
-	angle    float64
-	penDown  bool
-	penColor color.Color
-	penSize  float64
-	path     *drawing.Drawing
+	pos         fyne.Position
+	home        fyne.Position
+	heading     float32 // Current heading in degrees
+	homeHeading float32 // Heading when created
+	penDown     bool    // Whether the pen is down
+	penColor    color.Color
+	fillColor   color.Color
+	penSize     float32
+	isVisible   bool
+	speed       int
+	drawing     *fyne.Container
+	mutex       sync.Mutex
+	sprite      *TurtleSprite
 }
 
-// New creates a new Turtle
-func New() *Turtle {
+// NewTurtle creates a new turtle with default settings and a provided Fyne canvas
+func NewTurtle(drawing *fyne.Container, width, height float32) *Turtle {
+	home := fyne.NewPos(width/2, height/2)
+	homeHeading := float32(-90)
+	sprite := NewTurtleSprite()
+	sprite.Move(home)
+	sprite.SetAngle(homeHeading)
+	drawing.Add(sprite.Image())
 	return &Turtle{
-		x:        0, // Start at origin
-		y:        0,
-		angle:    0, // Start facing up
-		penDown:  true,
-		penColor: color.Black,
-		penSize:  1.0, // Default pen size
-		path:     drawing.NewDrawing(),
+		pos:         home,
+		home:        home,
+		heading:     homeHeading,
+		homeHeading: homeHeading,
+		penDown:     true,
+		penColor:    color.Black,
+		fillColor:   color.White,
+		penSize:     1,
+		isVisible:   true,
+		speed:       3,
+		drawing:     drawing,
+		sprite:      sprite,
 	}
 }
 
-// Forward moves the turtle forward in its current direction
-func (t *Turtle) Forward(distance float64) {
-	radians := (90 - t.angle) * math.Pi / 180
-	newX := t.x + distance*math.Cos(radians)
-	newY := t.y + distance*math.Sin(radians)
+// Forward moves the turtle forward by the specified distance
+func (t *Turtle) Forward(distance float32) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	rad := float64(t.heading * math.Pi / 180)
+	newX := t.pos.X + distance*float32(math.Cos(rad))
+	newY := t.pos.Y + distance*float32(math.Sin(rad))
+	newPos := fyne.NewPos(float32(newX), float32(newY))
 
 	if t.penDown {
-		t.path.Add(newX, newY)
+		t.drawLine(t.pos, newPos)
+		t.pos = fyne.NewPos(float32(newX), float32(newY))
 	}
 
-	t.x = newX
-	t.y = newY
+	t.sprite.Move(newPos)
+	t.delay()
 }
 
-// Backward moves the turtle backward in its current direction
-func (t *Turtle) Backward(distance float64) {
+// Backward moves the turtle backward by the specified distance
+func (t *Turtle) Backward(distance float32) {
 	t.Forward(-distance)
 }
 
-// Left turns the turtle left by the given angle
-func (t *Turtle) Left(angle float64) {
-	t.angle = math.Mod(t.angle-angle+360, 360)
+// Right turns the turtle right by the specified angle in degrees
+func (t *Turtle) Right(angle float32) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	t.heading = float32(math.Mod(float64(t.heading+angle), 360))
+	t.sprite.SetAngle(t.heading)
+	t.delay()
 }
 
-// Right turns the turtle right by the given angle
-func (t *Turtle) Right(angle float64) {
-	t.angle = math.Mod(t.angle+angle, 360)
+// Left turns the turtle left by the specified angle in degrees
+func (t *Turtle) Left(angle float32) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	t.heading = float32(math.Mod(float64(t.heading-angle), 360))
+	t.sprite.SetAngle(t.heading)
+	t.delay()
 }
 
-// PenUp lifts the pen up
+// PenUp lifts the pen up (no drawing)
 func (t *Turtle) PenUp() {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 	t.penDown = false
 }
 
-// PenDown puts the pen down
+// PenDown puts the pen down (drawing)
 func (t *Turtle) PenDown() {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 	t.penDown = true
 }
 
-// SetColor sets the pen color
-func (t *Turtle) SetColor(c color.Color) {
+// SetPenColor sets the color of the pen
+func (t *Turtle) SetPenColor(c color.Color) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 	t.penColor = c
 }
 
-// GetPosition returns the current position of the turtle
-func (t *Turtle) GetPosition() (float64, float64) {
-	return t.x, t.y
+// SetFillColor sets the fill color
+func (t *Turtle) SetFillColor(c color.Color) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	t.fillColor = c
 }
 
-// GetAngle returns the current angle of the turtle
-func (t *Turtle) GetAngle() float64 {
-	return t.angle
-}
-
-// GetPath returns the path drawn by the turtle
-func (t *Turtle) GetPath() *drawing.Drawing {
-	return t.path
-}
-
-// SetPosition updates the turtle's position and adds to path if pen is down
-func (t *Turtle) SetPosition(newX, newY float64) {
-	if t.penDown {
-		t.path.Add(newX, newY)
-	}
-
-	t.x = newX
-	t.y = newY
-}
-
-// SetAngle allows manually setting the turtle's angle
-func (t *Turtle) SetAngle(angle float64) {
-	t.angle = math.Mod(angle, 360)
-}
-
-// IsPenDown returns whether the pen is down
-func (t *Turtle) IsPenDown() bool {
-	return t.penDown
-}
-
-// GetColor returns the current pen color
-func (t *Turtle) GetColor() color.Color {
-	return t.penColor
-}
-
-// GetX returns the current x-coordinate of the turtle
-func (t *Turtle) GetX() float64 {
-	return t.x
-}
-
-// GetY returns the current y-coordinate of the turtle
-func (t *Turtle) GetY() float64 {
-	return t.y
-}
-
-// SetPenSize sets the pen size
-func (t *Turtle) SetPenSize(size float64) {
+// SetPenSize sets the size of the pen
+func (t *Turtle) SetPenSize(size float32) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 	t.penSize = size
 }
 
-// GetPenSize returns the current pen size
-func (t *Turtle) GetPenSize() float64 {
-	return t.penSize
+// Home moves the turtle to the origin (0,0) and sets heading to 0
+func (t *Turtle) Home() {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	if t.penDown {
+		t.drawLine(t.pos, t.home)
+		t.pos = t.home
+	}
+	t.sprite.Move(t.home)
+	t.heading = t.homeHeading
+	t.sprite.SetAngle(t.homeHeading)
+	t.delay()
+}
+
+// Goto moves the turtle to the specified coordinates
+func (t *Turtle) Goto(x, y float32) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	newPos := fyne.NewPos(t.home.X+x, t.home.Y+y)
+	if t.penDown {
+		t.drawLine(t.pos, newPos)
+	}
+	t.pos = newPos
+	t.sprite.Move(newPos)
+	t.delay()
+}
+
+// SetHeading sets the turtle's heading to the specified angle
+func (t *Turtle) SetHeading(angle float64) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	t.heading = float32(math.Mod(angle, 360))
+	t.sprite.SetAngle(t.heading)
+	t.delay()
+}
+
+// Position returns the current position of the turtle
+func (t *Turtle) Position() (float32, float32) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	return t.pos.X, t.pos.Y
+}
+
+// Heading returns the current heading of the turtle
+func (t *Turtle) Heading() float32 {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	return t.heading
+}
+
+// IsDown returns whether the pen is down
+func (t *Turtle) IsDown() bool {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	return t.penDown
+}
+
+// Speed sets the turtle's speed (0=fastest, 1-10 for incrementing speeds)
+func (t *Turtle) Speed(speed int) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	if speed < 0 {
+		speed = 0
+	} else if speed > 10 {
+		speed = 0
+	}
+	t.speed = speed
+}
+
+func (t *Turtle) delay() {
+	// Add delay based on speed
+	if t.speed > 0 {
+		delay := time.Duration(11-t.speed) * 50 * time.Millisecond
+		time.Sleep(delay)
+	}
+}
+
+func (t *Turtle) drawLine(start, end fyne.Position) {
+	line := canvas.NewLine(t.penColor)
+	line.StrokeWidth = float32(t.penSize)
+	line.Position1 = start
+	line.Position2 = end
+	t.drawing.Add(line)
 }

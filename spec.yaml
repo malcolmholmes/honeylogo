@@ -1,0 +1,381 @@
+name: HoneyLogo
+version: 1.0
+description: |
+  HoneyLogo is a structured programming language based on Logo, designed for 
+  educational purposes and turtle graphics. It emphasizes modularity and 
+  structured programming concepts.
+
+argument_types:
+  NUMBER: &number
+    type: number
+    description: A numeric value
+  CONDITION: &condition
+    type: boolean_expression
+    description: A logical expression that evaluates to TRUE or FALSE
+  BLOCK: &block
+    type: code_block
+    description: A sequence of HoneyLogo commands
+  STRING: &string
+    type: string
+    description: A text value
+  LIST: &list
+    type: list
+    description: A list of values
+  NAME: &name
+    type: string
+    description: A variable name (should start with quote mark)
+  COLOR: &color
+    type: number
+    description: A color value (0-15)
+
+categories:
+  turtle_graphics:
+    description: Commands for controlling the turtle and drawing
+    commands:
+      - name: FORWARD
+        aliases: [FD]
+        description: Move turtle forward
+        arguments:
+          - name: distance
+            <<: *number
+            description: Distance to move forward
+      - name: BACK
+        aliases: [BK]
+        description: Move turtle backward
+        arguments:
+          - name: distance
+            <<: *number
+            description: Distance to move backward
+      - name: LEFT
+        aliases: [LT]
+        description: Turn turtle left
+        arguments:
+          - name: angle
+            <<: *number
+            description: Angle in degrees to turn left
+      - name: RIGHT
+        aliases: [RT]
+        description: Turn turtle right
+        arguments:
+          - name: angle
+            <<: *number
+            description: Angle in degrees to turn right
+      - name: PENDOWN
+        aliases: [PD]
+        description: Put pen down for drawing
+        arguments: []
+      - name: PENUP
+        aliases: [PU]
+        description: Lift pen up
+        arguments: []
+      - name: PENERASE
+        aliases: [PE]
+        description: Set pen to erase mode
+        arguments: []
+      - name: PENREVERSE
+        aliases: [PENR]
+        description: Set pen to reverse mode
+        arguments: []
+      - name: HIDETURTLE
+        aliases: [HT]
+        description: Hide the turtle cursor
+        arguments: []
+      - name: SHOWTURTLE
+        aliases: [ST]
+        description: Show the turtle cursor
+        arguments: []
+      - name: CLEARSCREEN
+        aliases: [CS]
+        description: Clear the graphics screen
+        arguments: []
+      - name: HEADING
+        aliases: [HD]
+        description: Get current turtle heading
+        arguments: []
+        returns: *number
+      - name: SETHEADING
+        aliases: [SETH]
+        description: Set turtle heading
+        arguments:
+          - name: angle
+            <<: *number
+            description: Angle in degrees (0-360)
+      - name: SETPOS
+        aliases: [SETP]
+        description: Set turtle position
+        arguments:
+          - name: position
+            <<: *list
+            description: List containing [x y] coordinates
+      - name: SETXY
+        aliases: [SXY]
+        description: Set turtle X and Y coordinates
+        arguments:
+          - name: x
+            <<: *number
+            description: X coordinate
+          - name: y
+            <<: *number
+            description: Y coordinate
+
+  graphics:
+    description: Additional graphics commands
+    commands:
+      - name: CIRCLE
+        aliases: [CR]
+        description: Draw a circle
+        arguments:
+          - name: radius
+            <<: *number
+            description: Radius of the circle
+      - name: ELLIPSE
+        aliases: [ELL]
+        description: Draw an ellipse
+        arguments:
+          - name: width
+            <<: *number
+            description: Width of the ellipse
+          - name: height
+            <<: *number
+            description: Height of the ellipse
+      - name: FILL
+        aliases: [FL]
+        description: Fill an enclosed area
+        arguments: []
+      - name: PENCOLOUR
+        aliases: [PC]
+        description: Get current pen color
+        arguments: []
+        returns: *color
+      - name: SETPC
+        aliases: [SPC]
+        description: Set pen color
+        arguments:
+          - name: color
+            <<: *color
+            description: Color value (0-15)
+
+  list_processing:
+    description: Commands for handling lists and data
+    commands:
+      - name: FIRST
+        aliases: [FT]
+        description: Get first item of list
+        arguments:
+          - name: list
+            <<: *list
+            description: List to get first item from
+        returns: 
+          type: any
+          description: First item from the list
+      - name: BUTFIRST
+        aliases: [BF]
+        description: Get list without first item
+        arguments:
+          - name: list
+            <<: *list
+            description: Input list
+        returns: *list
+      - name: LAST
+        aliases: [LA]
+        description: Get last item of list
+        arguments:
+          - name: list
+            <<: *list
+            description: List to get last item from
+        returns:
+          type: any
+          description: Last item from the list
+      - name: BUTLAST
+        aliases: [BL]
+        description: Get list without last item
+        arguments:
+          - name: list
+            <<: *list
+            description: Input list
+        returns: *list
+
+  control_structures:
+    description: Program flow control
+    commands:
+      - name: TO
+        description: Define a new procedure
+        arguments:
+          - name: name
+            <<: *name
+            description: Name of the procedure
+          - name: parameters
+            type: list
+            description: Optional list of parameter names
+          - name: body
+            <<: *block
+            description: Procedure body (until END)
+      - name: IF
+        description: Conditional execution
+        arguments:
+          - name: condition
+            <<: *condition
+            description: Boolean condition to test
+          - name: true_block
+            <<: *block
+            description: Code to execute if condition is true
+      - name: REPEAT
+        aliases: [RP]
+        description: Repeat commands
+        arguments:
+          - name: count
+            <<: *number
+            description: Number of times to repeat
+          - name: block
+            <<: *block
+            description: Code block to repeat
+      - name: UNTIL
+        aliases: [UT]
+        description: Repeat until condition
+        arguments:
+          - name: condition
+            <<: *condition
+            description: Condition to test after each iteration
+          - name: block
+            <<: *block
+            description: Code block to repeat
+
+  variables:
+    description: Variable management
+    commands:
+      - name: MAKE
+        aliases: [MK]
+        description: Create/set variable
+        arguments:
+          - name: name
+            <<: *name
+            description: Variable name (with quote)
+          - name: value
+            type: any
+            description: Value to assign
+      - name: THING
+        aliases: [TH]
+        description: Get variable value
+        arguments:
+          - name: name
+            <<: *name
+            description: Variable name (with quote)
+        returns:
+          type: any
+          description: Value of the variable
+
+  arithmetic:
+    description: Mathematical operations
+    commands:
+      - name: ABSOLUTE
+        aliases: [ABS]
+        description: Absolute value
+        arguments:
+          - name: value
+            <<: *number
+            description: Number to get absolute value of
+        returns: *number
+      - name: ARCCOS
+        aliases: [ACS]
+        description: Arc cosine
+        arguments:
+          - name: value
+            <<: *number
+            description: Value between -1 and 1
+        returns:
+          <<: *number
+          description: Angle in degrees
+      - name: PRODUCT
+        aliases: [PROD]
+        description: Multiply numbers
+        arguments:
+          - name: numbers
+            type: list
+            description: List of numbers to multiply
+        returns: *number
+      - name: RANDOM
+        aliases: [RND]
+        description: Generate random number
+        arguments:
+          - name: max
+            <<: *number
+            description: Maximum value (exclusive)
+        returns: *number
+
+  io_operations:
+    description: Input/Output operations
+    commands:
+      - name: PRINT
+        aliases: [PR]
+        description: Print to screen
+        arguments:
+          - name: value
+            type: any
+            description: Value to print
+      - name: SHOW
+        description: Display value
+        arguments:
+          - name: value
+            type: any
+            description: Value to display
+      - name: LOAD
+        aliases: [LD]
+        description: Load program from file
+        arguments:
+          - name: filename
+            <<: *string
+            description: Name of file to load
+      - name: SAVE
+        aliases: [SV]
+        description: Save program to file
+        arguments:
+          - name: filename
+            <<: *string
+            description: Name of file to save to
+
+features:
+  - Structured programming support
+  - User-defined procedures
+  - Parameter passing
+  - Turtle graphics
+  - List processing
+  - File I/O
+  - Screen management
+  - Mathematical operations
+
+best_practices:
+  - Write programs in modules
+  - Test modules independently
+  - Use structured features extensively
+  - Utilize OUTPUT primitive for procedure returns
+  - Start with simple examples and modify them
+  - Document your procedures
+  - Use meaningful procedure names
+
+file_extensions:
+  - .logo
+  - .lg
+
+environment:
+  screen_modes:
+    - TEXTSCREEN
+    - SPLITSCREEN
+    - GRAPHICSSCREEN
+  
+  color_values:
+    0: black
+    1: blue
+    2: green
+    3: cyan
+    4: red
+    5: magenta
+    6: yellow
+    7: white
+    8: gray
+    9: light blue
+    10: light green
+    11: light cyan
+    12: light red
+    13: light magenta
+    14: light yellow
+    15: bright white

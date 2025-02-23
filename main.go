@@ -1,181 +1,46 @@
 package main
 
 import (
-	"image"
+	"image/color"
 	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/honeylogo/logo/interpreter"
-	"github.com/honeylogo/logo/rendering"
+	"github.com/honeylogo/logo/turtle"
 
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 const (
-	canvasWidth  = rendering.CanvasWidth
-	canvasHeight = rendering.CanvasHeight
+	canvasWidth  = 1200
+	canvasHeight = 800
 )
 
-type LogoApp struct {
-	app          fyne.App
-	window       fyne.Window
-	interp       *interpreter.Interpreter
-	canvas       *canvas.Image
-	cmdInput     *widget.Entry
-	outputLog    *widget.Entry
-	turtleStatus *widget.Label
-	delayInput   *widget.Entry
-	renderer     rendering.Renderer
-}
+func executeCommands(turtle *turtle.Turtle) {
 
-func NewLogoApp() *LogoApp {
-	a := &LogoApp{
-		app:      app.New(),
-		interp:   interpreter.New(),
-		renderer: rendering.NewRenderer(),
+	// Draw the turtle graphics
+	colors := []color.Color{
+		color.RGBA{R: 255, A: 255},
+		color.RGBA{G: 255, A: 255},
+		color.RGBA{B: 255, A: 255},
+		color.RGBA{R: 255, G: 255, A: 255},
 	}
 
-	// Start turtle in the middle of the screen, pointing up
-	a.interp.GetTurtle().SetPosition(0, 0)
-	a.interp.GetTurtle().SetAngle(90) // Pointing upwards
-
-	a.setupUI()
-	return a
-}
-
-func (la *LogoApp) setupUI() {
-	la.window = la.app.NewWindow("HoneyLogo")
-	la.window.Resize(fyne.NewSize(1200, 800))
-
-	// Create a drawing area
-	img := image.NewRGBA(image.Rect(0, 0, canvasWidth, canvasHeight))
-
-	// Draw initial turtle
-	currentX, currentY := la.interp.GetTurtle().GetPosition()
-	currentAngle := la.interp.GetTurtle().GetAngle()
-	rendering.DrawTurtle(img, int(currentX), int(currentY), currentAngle)
-
-	la.canvas = canvas.NewImageFromImage(img)
-	la.canvas.SetMinSize(fyne.NewSize(canvasWidth, canvasHeight))
-	la.canvas.FillMode = canvas.ImageFillOriginal
-
-	// Create input field for Logo commands
-	la.cmdInput = widget.NewMultiLineEntry()
-	la.cmdInput.SetPlaceHolder("Enter Logo commands...")
-
-	// Create output log
-	la.outputLog = widget.NewMultiLineEntry()
-	la.outputLog.Disable() // Make it read-only
-
-	// Create a submit button
-	submitBtn := widget.NewButton("Execute", func() {
-		la.executeCommands()
-	})
-
-	// Turtle status label
-	la.turtleStatus = widget.NewLabel("Turtle status: ")
-
-	// Create delay slider
-	delaySlider := widget.NewSlider(0, 1000)
-	delaySlider.Step = 50
-	delaySlider.Value = 300
-	// Create delay label with initial value
-	delayLabel := widget.NewLabel(fmt.Sprintf("Render Delay: %d ms", 300))
-
-	delaySlider.OnChanged = func(value float64) {
-		rendering.SetRenderDelay(time.Duration(value) * time.Millisecond)
-		// Update label with current ms value
-		delayLabel.SetText(fmt.Sprintf("Render Delay: %d ms", int(value)))
+	size := float32(10.0)
+	for i := 0; i < 60; i++ {
+		log.Debug().Msgf("phase=main turtle draw point %d", i)
+		turtle.SetPenColor(colors[i%len(colors)])
+		turtle.Forward(size)
+		turtle.Right(90)
+		size += 5
 	}
-
-	// Turtle status panel
-	turtleStatusPanel := container.NewBorder(
-		nil, // Top
-		container.NewVBox(
-			delayLabel,
-			delaySlider,
-		), // Bottom
-		nil,             // Left
-		nil,             // Right
-		la.turtleStatus, // Center
-	)
-
-	// Left panel with command input and output log
-	leftPanel := container.NewBorder(
-		nil,         // Top
-		submitBtn,   // Bottom
-		nil,         // Left
-		nil,         // Right
-		la.cmdInput, // Center
-	)
-
-	// Output log panel
-	outputPanel := container.NewBorder(
-		nil,          // Top
-		nil,          // Bottom
-		nil,          // Left
-		nil,          // Right
-		la.outputLog, // Center
-	)
-
-	// Left side container (commands and output)
-	leftSideContainer := container.NewVSplit(
-		leftPanel,
-		outputPanel,
-	)
-	leftSideContainer.Offset = 0.7 // Give more space to command input
-
-	// Left side container with turtle status
-	leftSideContainerWithTurtleStatus := container.NewVSplit(
-		leftSideContainer,
-		turtleStatusPanel,
-	)
-	leftSideContainerWithTurtleStatus.Offset = 0.95 // Give more space to command input and output
-
-	// Main window layout
-	content := container.NewHSplit(
-		leftSideContainerWithTurtleStatus,
-		la.canvas,
-	)
-
-	la.window.SetContent(content)
-}
-
-func (la *LogoApp) executeCommands() {
-	// Get the text from the input
-	commands := la.cmdInput.Text
-
-	// Create a new image
-	la.canvas.Image = image.NewRGBA(image.Rect(0, 0, rendering.CanvasWidth, rendering.CanvasHeight))
-
-	// Execute the command
-	drawing, err := la.interp.Execute(commands)
-	if err != nil {
-		// Log error to output log
-		la.outputLog.Append("Error: " + err.Error() + "\n")
-	} else {
-		// Log successful command
-		la.outputLog.Append("> " + commands + "\n")
-	}
-	// Render the drawing
-	log.Debug().Msgf("phase=main render %d drawing points", len(drawing.Points()))
-
-	la.renderer.SetCanvas(la.canvas)
-	la.renderer.RenderDrawing(drawing)
-}
-
-func (la *LogoApp) Run() {
-	la.window.ShowAndRun()
 }
 
 func init() {
@@ -188,28 +53,46 @@ func init() {
 			return "" // Remove log level
 		},
 		FormatMessage: func(i interface{}) string {
-			// Check if the message starts with a phase
 			msg := fmt.Sprintf("%v", i)
 			if strings.HasPrefix(msg, "phase=") {
-				// Split the phase and the rest of the message
 				parts := strings.SplitN(msg, " ", 2)
 				if len(parts) == 2 {
-					// Colorize the phase (cyan) and keep the rest of the message
 					return fmt.Sprintf("\x1b[36m%s\x1b[0m %s", parts[0], parts[1])
 				}
 			}
 			return msg
 		},
-		FormatFieldName: func(i interface{}) string {
-			return "" // Remove field names
-		},
-		FormatFieldValue: func(i interface{}) string {
-			return "" // Remove field values
-		},
 	}).Level(zerolog.DebugLevel)
 }
 
 func main() {
-	logoApp := NewLogoApp()
-	logoApp.Run()
+	// Create a new Fyne application
+	myApp := app.New()
+
+	// Create a new window
+	myWindow := myApp.NewWindow("HoneyLogo")
+
+	// Set the window size
+	myWindow.Resize(fyne.NewSize(800, 600))
+
+	drawing := container.NewWithoutLayout()
+
+	t := turtle.NewTurtle(drawing, 800, 600)
+	t.Speed(10)
+	executeButton := widget.NewButton("Execute", func() {
+
+		for j := 0; j < 60; j++ {
+			for i := 0; i < 4; i++ {
+				t.Forward(100)
+				t.Right(90)
+			}
+			t.Right(360 / 60)
+		}
+	})
+	// Layout
+	content := container.NewBorder(nil, executeButton, nil, nil, drawing)
+	myWindow.SetContent(content)
+
+	// Show and run the application
+	myWindow.ShowAndRun()
 }
