@@ -1,73 +1,53 @@
-# HoneyLogo: A Logo Programming Language Interpreter in Go
+# HoneyLogo - React TypeScript Edition
 
-## Overview
-HoneyLogo is a modern implementation of the Logo programming language, designed to be simple, educational, and fun. This implementation focuses on the core features of Logo, including turtle graphics and basic programming constructs.
+A TypeScript and React implementation of the HoneyLogo turtle graphics programming environment.
 
-## Features
-- Turtle graphics
-- Basic Logo syntax support
-- Simple interpreter
-- Extensible design
+## Technology Stack
+
+- **Bun** - JavaScript runtime and package manager
+- **React** - UI framework
+- **TypeScript** - Type-safe JavaScript
+- **Bootstrap 5** - Responsive UI framework
+- **Vite** - Build tooling
 
 ## Getting Started
 
 ### Prerequisites
-- Go 1.21 or higher
+
+Ensure you have Bun installed on your system. If not, follow the installation instructions at [bun.sh](https://bun.sh).
 
 ### Installation
+
 ```bash
-git clone https://github.com/honeylogo/logo
-cd logo
-go mod tidy
-go build
+# Install dependencies
+bun install
 ```
 
-### Running
+### Development
+
 ```bash
-./logo
+# Start the development server
+bun dev
 ```
 
-## Running the Logo Visualization
+### Building for Production
 
-### Prerequisites
-- Go 1.21 or higher
-- Required system dependencies for Fyne (varies by platform)
-  - Linux: `sudo apt-get install gcc libgl1-mesa-dev xorg-dev`
-  - macOS: Xcode Command Line Tools
-  - Windows: MinGW-w64 with GCC
-
-### Installation
 ```bash
-git clone https://github.com/honeylogo/logo
-cd logo
-go mod tidy
-go build ./cmd
+# Build the application
+bun build
 ```
 
-### Running the App
-```bash
-go run ./cmd
-```
+## Project Structure
 
-### Example Logo Commands
-- `forward 100`: Move turtle forward 100 units
-- `right 90`: Turn turtle right 90 degrees
-- `repeat 4 [ forward 100 right 90 ]`: Draw a square
-- `fd 50 rt 120 fd 50 rt 120 fd 50`: Draw an equilateral triangle
+- `src/` - Source code
+  - `components/` - React components
+  - `App.tsx` - Main application component
+  - `main.tsx` - Application entry point
+- `public/` - Static assets
 
-## Supported Logo Commands
-- `forward` / `fd`
-- `backward` / `bk`
-- `left` / `lt`
-- `right` / `rt`
-- `penup` / `pu`
-- `pendown` / `pd`
-- `setcolor`
-- `repeat`
-- Basic arithmetic operations
+## Features
 
-## Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-MIT License
+- TypeScript-based Logo interpreter
+- Canvas-based turtle graphics
+- Code editor with syntax highlighting
+- Output panel for messages and feedback
