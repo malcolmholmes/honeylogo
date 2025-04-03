@@ -60,10 +60,3 @@ jobs:
           if [[ -n "$DEPLOY_URL" ]]; then
             curl -sH "webhook-token: ${{ secrets.WEBHOOK_TOKEN }}" $DEPLOY_URL
           fi
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: dist
-          path: dist/
-          retention-days: 7
