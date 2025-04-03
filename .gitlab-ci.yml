@@ -1,0 +1,45 @@
+image: docker:latest
+
+variables:
+  DOCKER_TLS_CERTDIR: "/certs"
+  REGISTRY: registry.gitlab.com/malcolmholmes/honeylogo
+
+services:
+  - docker:dind
+
+stages:
+  - build-and-deploy
+
+before_script:
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+build-and-deploy:
+  stage: build-and-deploy
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+      when: manual
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+      when: always
+    - when: never
+  script:
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
+        export TAG=latest
+        export NODE_ENV=production
+      else
+        export TAG=develop
+        export NODE_ENV=development
+      fi
+    - docker build -t $REGISTRY:$TAG --build-arg NODE_ENV=$NODE_ENV .
+    - echo "Deploying to $REGISTRY:$TAG"
+    - docker push $REGISTRY:$TAG
+    # Add deployment webhook trigger if needed
+    - apk add curl
+    - >
+      curl -sH "webhook-token: $WEBHOOK_TOKEN" $DEPLOY_URL
+  
+  # Optional: Add artifacts to keep the build outputs
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
