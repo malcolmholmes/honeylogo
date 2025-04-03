@@ -18,6 +18,8 @@ WORKDIR /app
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /app
+# Copy package.json for script commands
+COPY --from=builder /app/package.json /app/package.json
 
 # Expose port for the web server
 EXPOSE 3000
@@ -25,5 +27,5 @@ EXPOSE 3000
 # Set environment variables
 ENV NODE_ENV=production
 
-# Start the server using Bun's built-in server
-CMD ["bun", "serve", "--port", "80"]
+# Start the server using the preview command from package.json
+CMD ["bun", "run", "preview", "--host", "0.0.0.0"]
