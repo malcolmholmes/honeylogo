@@ -4,9 +4,10 @@ interface CodeEditorProps {
   code: string;
   onChange: (code: string) => void;
   onExecute: () => void;
+  onClear: () => void;
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, onExecute }) => {
+const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, onExecute, onClear }) => {
   return (
     <div className="card h-100">
       <div className="card-header bg-primary text-white">
@@ -22,12 +23,20 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, onExecute }) =>
         />
       </div>
       <div className="card-footer p-0">
-        <button
-          className="btn btn-success btn-execute"
-          onClick={onExecute}
-        >
-          Execute
-        </button>
+        <div className="d-flex">
+          <button
+            className="btn btn-success flex-grow-1 rounded-0"
+            onClick={onExecute}
+          >
+            Execute
+          </button>
+          <button
+            className="btn btn-secondary flex-grow-1 rounded-0 border-left"
+            onClick={onClear}
+          >
+            Clear
+          </button>
+        </div>
       </div>
     </div>
   );
