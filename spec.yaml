@@ -275,6 +275,69 @@ categories:
             <<: *number
             description: Number to get absolute value of
         returns: *number
+      - name: SUM
+        aliases: [+]
+        description: Add two numbers
+        arguments:
+          - name: number1
+            <<: *number
+            description: First number
+          - name: number2
+            <<: *number
+            description: Second number
+        returns: *number
+      - name: DIFFERENCE
+        aliases: [-]
+        description: Subtract two numbers
+        arguments:
+          - name: number1
+            <<: *number
+            description: First number
+          - name: number2
+            <<: *number
+            description: Second number to subtract from first
+        returns: *number
+      - name: PRODUCT
+        aliases: [PROD, *]
+        description: Multiply numbers
+        arguments:
+          - name: number1
+            <<: *number
+            description: First number
+          - name: number2
+            <<: *number
+            description: Second number
+        returns: *number
+      - name: QUOTIENT
+        aliases: [QUOT, /]
+        description: Divide numbers
+        arguments:
+          - name: number1
+            <<: *number
+            description: Dividend (number to be divided)
+          - name: number2
+            <<: *number
+            description: Divisor (number to divide by)
+        returns: *number
+      - name: REMAINDER
+        aliases: [REM]
+        description: Get division remainder
+        arguments:
+          - name: number1
+            <<: *number
+            description: Dividend
+          - name: number2
+            <<: *number
+            description: Divisor
+        returns: *number
+      - name: RANDOM
+        aliases: [RND]
+        description: Generate random number
+        arguments:
+          - name: max
+            <<: *number
+            description: Maximum value (exclusive)
+        returns: *number
       - name: ARCCOS
         aliases: [ACS]
         description: Arc cosine
@@ -285,22 +348,6 @@ categories:
         returns:
           <<: *number
           description: Angle in degrees
-      - name: PRODUCT
-        aliases: [PROD]
-        description: Multiply numbers
-        arguments:
-          - name: numbers
-            type: list
-            description: List of numbers to multiply
-        returns: *number
-      - name: RANDOM
-        aliases: [RND]
-        description: Generate random number
-        arguments:
-          - name: max
-            <<: *number
-            description: Maximum value (exclusive)
-        returns: *number
 
   io_operations:
     description: Input/Output operations

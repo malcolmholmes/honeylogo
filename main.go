@@ -78,13 +78,27 @@ func main() {
 	// Set the window size
 	myWindow.Resize(fyne.NewSize(canvasWidth, canvasHeight))
 
+	ctrlPressed := false
+	myWindow.Canvas().SetOnTypedKey(func(key *fyne.KeyEvent) {
+		if key.Name == "Control" {
+			ctrlPressed = true
+		}
+	})
 	drawing := container.NewWithoutLayout()
 
 	t := turtle.NewTurtle(drawing, canvasWidth, canvasHeight)
 	t.Speed(10)
+
 	codeBox := widget.NewMultiLineEntry()
 	codeBox.SetPlaceHolder("Enter Logo commands...")
 	codeBox.Resize(fyne.NewSize(400, 400))
+	codeBox.OnSubmitted = func(text string) {
+		if ctrlPressed {
+			log.Debug().Msgf("phase=main ctrl-Enter: %s", text)
+		} else {
+			log.Debug().Msgf("enter: %s,", text)
+		}
+	}
 	executeButton := widget.NewButton("Execute", func() {
 
 		program := codeBox.Text
@@ -99,7 +113,13 @@ func main() {
 			log.Fatal().Err(err).Msg("Failed to execute program")
 		}
 	})
-
+	/*
+		desktop.KeyDown(func(key *fyne.KeyEvent) {
+			if key.Name == "Control" {
+				ctrlPressed = true
+			}
+		})
+	*/
 	codePanel := container.NewBorder(nil, executeButton, nil, nil, codeBox)
 	outputBox := widget.NewMultiLineEntry()
 	outputBox.Disable()
