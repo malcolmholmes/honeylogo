@@ -1,5 +1,5 @@
 # Stage 1: Build TypeScript application with Bun and Vite
-FROM oven/bun:1.2.7 AS builder
+FROM oven/bun:1.2.7 AS ts-builder
 WORKDIR /app
 
 # Copy package files and install dependencies
@@ -10,22 +10,28 @@ RUN bun install
 COPY . .
 
 # Build the application using Vite
-RUN bun run build
+RUN bun build src/main.tsx \
+                --target=browser \
+                --outdir=public \
+                --minify
 
-# Stage 2: Serve the application with a lightweight server
-FROM oven/bun:1.2.7-alpine AS runner
+# Stage 2: Build Go application
+FROM golang:1.23-alpine AS go-builder
 WORKDIR /app
+COPY go.* /app/
+RUN go mod download
+COPY . /app
+RUN CGO_ENABLED=0 go build -o victor
 
-# Copy built assets from builder stage
-COPY --from=builder /app/dist /app
-# Copy package.json for script commands
-COPY --from=builder /app/package.json /app/package.json
+# Stage 3: Final image
+FROM alpine:3.19
+RUN apk add --no-cache ca-certificates
 
-# Expose port for the web server
-EXPOSE 3000
+WORKDIR /app
+# Copy built artifacts from previous stages
+COPY --from=go-builder /app/victor /usr/bin/victor
+COPY --from=ts-builder /app/public /app
 
-# Set environment variables
-ENV NODE_ENV=production
-
-# Start the server using the preview command from package.json
-CMD ["bun", "run", "preview", "--host", "0.0.0.0"]
+# Set environment variables and entrypoint
+ENV PATH=/usr/bin:$PATH
+ENTRYPOINT ["victor"]

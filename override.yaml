@@ -1,0 +1,3 @@
+site:
+  static-content: public/
+port: 8002

@@ -1,0 +1,18 @@
+db:
+  enabled: false
+
+site:
+  static-content: /app
+
+http:
+  paths:
+    /:
+      - ref: web
+
+startup:
+  web-calls:
+    handler: web
+    phase: web
+    enabled: true
+    config:
+      urls: []
