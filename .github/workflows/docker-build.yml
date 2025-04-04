@@ -41,6 +41,11 @@ jobs:
             echo "TAG=develop" >> $GITHUB_ENV
             echo "NODE_ENV=development" >> $GITHUB_ENV
           fi
+      - name: set up golang mods
+        id: go_mods
+        run: |
+          ln -sf go.mod.remote go.mod
+          ln -sf go.sum.remote go.sum
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
