@@ -383,7 +383,14 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
       },
 
       setPosition: (x: number, y: number) => {
-        animateMovement(x, y);
+        const canvas = canvasRef.current;
+        if (canvas) {
+          // Reset position to center
+          const centerX = canvas.width / 2;
+          const centerY = canvas.height / 2;
+
+          animateMovement(centerX + x, centerY - y);
+        }
       },
     };
     
