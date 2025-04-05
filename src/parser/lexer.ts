@@ -87,6 +87,10 @@ export class Lexer {
         case 'home':
           tokens.push({ type: TokenType.COMMAND, value: 'home' });
           break;
+        case 'clearscreen':
+        case 'cs':
+          tokens.push({ type: TokenType.COMMAND, value: 'clearscreen' });
+          break;
 
         // Pen commands
         case 'penup':

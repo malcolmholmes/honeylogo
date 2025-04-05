@@ -16,6 +16,7 @@ import {
   SetPenSizeCommand,
   SetPositionCommand,
   HomeCommand,
+  ClearScreenCommand,
   RepeatCommand,
   Program,
   HideTurtleCommand,
@@ -85,6 +86,11 @@ const commandDefinitions: Record<string, CommandDefinition> = {
     aliases: [],
     requiresValue: false,
     createCommand: () => new HomeCommand()
+  },
+  'clearscreen': {
+    aliases: ['cs'],
+    requiresValue: false,
+    createCommand: () => new ClearScreenCommand()
   },
   'hideturtle': {
     aliases: ['ht'],

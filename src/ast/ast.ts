@@ -202,6 +202,16 @@ export class HomeCommand implements Command {
   }
 }
 
+export class ClearScreenCommand implements Command {
+  execute(ctx: Context): void {
+    ctx.turtle.clear();
+  }
+
+  toString(): string {
+    return "CLEARSCREEN";
+  }
+}
+
 /**
  * HideTurtleCommand hides the turtle during drawing
  */
