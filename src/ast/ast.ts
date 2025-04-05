@@ -172,8 +172,8 @@ export class SetPenSizeCommand implements Command {
  * SetPositionCommand moves the turtle to a specific position
  */
 export class SetPositionCommand implements Command {
-  x: number;
-  y: number;
+  x: number | null;
+  y: number | null;
 
   constructor(x: number, y: number) {
     this.x = x;
@@ -181,11 +181,30 @@ export class SetPositionCommand implements Command {
   }
 
   execute(ctx: Context): void {
-    ctx.turtle.setPosition?.(this.x, this.y);
+    ctx.turtle.setPosition?.(this.x ?? 0, this.y ?? 0);
   }
 
   toString(): string {
-    return `SETPOSITION (${this.x.toFixed(2)}, ${this.y.toFixed(2)})`;
+    return `SETPOSITION (${this.x ? this.x.toFixed(2) : "null"}, ${this.y ? this.y.toFixed(2) : "null"})`;
+  }
+}
+
+/**
+ * SetHeadingCommand sets the turtle's heading
+ */
+export class SetHeadingCommand implements Command {
+  heading: number;
+
+  constructor(heading: number) {
+    this.heading = heading;
+  }
+
+  execute(ctx: Context): void {
+    ctx.turtle.setHeading?.(this.heading);
+  }
+
+  toString(): string {
+    return `SETHEADING ${this.heading.toFixed(2)}`;
   }
 }
 

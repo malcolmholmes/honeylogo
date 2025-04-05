@@ -14,7 +14,8 @@ export interface TurtleHandle {
   hideTurtle: () => void;
   showTurtle: () => void;
   setPenSize?: (size: number) => void;
-  setPosition?: (x: number, y: number) => void;
+  setPosition?: (x: number | null, y: number | null) => void;
+  setHeading?: (angle: number) => void;
   home?: () => void;
 }
 
@@ -382,15 +383,22 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
         }
       },
 
-      setPosition: (x: number, y: number) => {
+      setPosition: (x: number | null, y: number | null) => {
         const canvas = canvasRef.current;
         if (canvas) {
           // Reset position to center
           const centerX = canvas.width / 2;
           const centerY = canvas.height / 2;
+          if (x === null) x = position.current.x;
+          if (y === null) y = position.current.y;
 
           animateMovement(centerX + x, centerY - y);
         }
+      },
+
+      setHeading: (heading: number) => {
+        angle.current = heading -90;
+        animateMovement(position.current.x, position.current.y);
       },
     };
     

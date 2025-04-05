@@ -80,6 +80,11 @@ export class Lexer {
         case 'sety':
           tokens.push({ type: TokenType.COMMAND, value: 'sety' });
           break;
+        case 'setposition':
+        case 'setpos':
+        case 'setxy':
+          tokens.push({ type: TokenType.COMMAND, value: 'setposition' });
+          break;
         case 'setheading':
         case 'seth':
           tokens.push({ type: TokenType.COMMAND, value: 'setheading' });
