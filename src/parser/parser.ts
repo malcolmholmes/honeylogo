@@ -17,7 +17,9 @@ import {
   SetPositionCommand,
   HomeCommand,
   RepeatCommand,
-  Program
+  Program,
+  HideTurtleCommand,
+  ShowTurtleCommand
 } from '../ast/ast';
 
 // CommandDefinition describes how to parse and create a command
@@ -34,7 +36,7 @@ const commandDefinitions: Record<string, CommandDefinition> = {
     requiresValue: true,
     createCommand: (val: number) => new ForwardCommand(val)
   },
-  'backward': {
+  'back': {
     aliases: ['bk'],
     requiresValue: true,
     createCommand: (val: number) => new BackwardCommand(val)
@@ -83,6 +85,16 @@ const commandDefinitions: Record<string, CommandDefinition> = {
     aliases: [],
     requiresValue: false,
     createCommand: () => new HomeCommand()
+  },
+  'hideturtle': {
+    aliases: ['ht'],
+    requiresValue: false,
+    createCommand: () => new HideTurtleCommand()
+  },
+  'showturtle': {
+    aliases: ['st'],
+    requiresValue: false,
+    createCommand: () => new ShowTurtleCommand()
   }
 };
 
@@ -96,7 +108,8 @@ function findCommandDefinition(name: string): CommandDefinition | null {
   }
 
   // Check aliases
-  for (const [cmdName, def] of Object.entries(commandDefinitions)) {
+  const entries = Object.values(commandDefinitions);
+  for (const def of entries) {
     if (def.aliases.includes(name)) {
       return def;
     }

@@ -97,6 +97,14 @@ export class Lexer {
         case 'pd':
           tokens.push({ type: TokenType.COMMAND, value: 'pendown' });
           break;
+        case 'hideturtle':
+        case 'ht':
+          tokens.push({ type: TokenType.COMMAND, value: 'hideturtle' });
+          break;
+        case 'showturtle':
+        case 'st':
+          tokens.push({ type: TokenType.COMMAND, value: 'showturtle' });
+          break;
         case 'setpencolor':
         case 'setpc':
           tokens.push({ type: TokenType.COMMAND, value: 'setpencolor' });
@@ -108,6 +116,7 @@ export class Lexer {
 
         // Control structures
         case 'repeat':
+        case 'rp':
           tokens.push({ type: TokenType.REPEAT, value: 'repeat' });
           break;
         case 'to':

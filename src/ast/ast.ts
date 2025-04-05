@@ -160,8 +160,7 @@ export class SetPenSizeCommand implements Command {
 
   execute(ctx: Context): void {
     // If your Turtle implementation has a setPenSize method
-    // ctx.turtle.setPenSize(this.size);
-    // Otherwise, this method might need to be implemented in the Turtle class
+    ctx.turtle.setPenSize?.(this.size);
   }
 
   toString(): string {
@@ -182,9 +181,7 @@ export class SetPositionCommand implements Command {
   }
 
   execute(ctx: Context): void {
-    // If your Turtle implementation has a goto method
-    // ctx.turtle.goto(this.x, this.y);
-    // Otherwise, this needs to be implemented
+    ctx.turtle.setPosition?.(this.x, this.y);
   }
 
   toString(): string {
@@ -197,13 +194,37 @@ export class SetPositionCommand implements Command {
  */
 export class HomeCommand implements Command {
   execute(ctx: Context): void {
-    // If your Turtle implementation has a home method
-    // ctx.turtle.home();
-    // Otherwise, this needs to be implemented
+    ctx.turtle.home?.();
   }
 
   toString(): string {
     return "HOME";
+  }
+}
+
+/**
+ * HideTurtleCommand hides the turtle during drawing
+ */
+export class HideTurtleCommand implements Command {
+  execute(ctx: Context): void {
+    ctx.turtle.hideTurtle();
+  }
+
+  toString(): string {
+    return "HIDETURTLE";
+  }
+}
+
+/**
+ * ShowTurtleCommand shows the turtle during drawing
+ */
+export class ShowTurtleCommand implements Command {
+  execute(ctx: Context): void {
+    ctx.turtle.showTurtle();
+  }
+
+  toString(): string {
+    return "SHOWTURTLE";
   }
 }
 
@@ -228,8 +249,10 @@ export class RepeatCommand implements Command {
   }
 
   toString(): string {
-    const commandsStr = this.commands.map(cmd => cmd.toString()).join('\n  ');
-    return `REPEAT ${this.times} [\n  ${commandsStr}\n]`;
+    const commandsStr = this.commands
+      .map(cmd => `  ${cmd.toString()}`)
+      .join('\n');
+    return `REPEAT ${this.times} [\n${commandsStr}\n]`;
   }
 }
 

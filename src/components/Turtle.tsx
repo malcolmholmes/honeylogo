@@ -10,8 +10,12 @@ export interface TurtleHandle {
   penDown: () => void;
   setColor: (color: string) => void;
   clear: () => void;
-  demo: () => void;
   setAnimationSpeed: (speed: number) => void;
+  hideTurtle: () => void;
+  showTurtle: () => void;
+  setPenSize?: (size: number) => void;
+  setPosition?: (x: number, y: number) => void;
+  home?: () => void;
 }
 
 const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
@@ -29,6 +33,8 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
   const animationSpeed = useRef(10); // Number of animation steps per movement
   const animationInProgress = useRef(false); // Track if animation is in progress
   const animationQueue = useRef<(() => void)[]>([]); // Queue for pending animations
+  const isTurtleVisible = useRef(true); // Track if turtle is visible
+  const penSize = useRef(2); // Pen size
   
   // Function to erase the turtle at its previous position
   const eraseTurtle = () => {
@@ -66,6 +72,7 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
     
     // Save current context state
     ctx.save();
+    if (!isTurtleVisible.current) return;
     
     // Move to the current position and rotate
     ctx.translate(x, y);
@@ -93,6 +100,75 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
       }
     } else {
       animationInProgress.current = false;
+    }
+  };
+
+  // Function to animate movement between two points
+  const animateMovement = (endX: number, endY: number) => {
+    const animateFunction = () => {
+      if (!contextRef.current) {
+        processNextAnimation();
+        return;
+      }
+      
+      const ctx = contextRef.current;
+      const startX = position.current.x;
+      const startY = position.current.y;
+      
+      // Number of steps based on animation speed and distance
+      const distance = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+      const steps = Math.max(5, Math.min(Math.abs(distance), animationSpeed.current * 5));
+      let currentStep = 0;
+      
+      // Function for animation step
+      const animateStep = () => {
+        if (currentStep >= steps) {
+          // Animation complete, process next animation
+          processNextAnimation();
+          return;
+        }
+        
+        currentStep++;
+        
+        // Calculate incremental movement
+        const progress = currentStep / steps;
+        const newX = startX + (endX - startX) * progress;
+        const newY = startY + (endY - startY) * progress;
+        
+        // Erase the turtle from its previous position
+        eraseTurtle();
+        
+        // Draw the line segment if pen is down
+        if (isPenDown.current) {
+          ctx.beginPath();
+          ctx.strokeStyle = color.current;
+          ctx.lineWidth = penSize.current;
+          ctx.moveTo(position.current.x, position.current.y);
+          ctx.lineTo(newX, newY);
+          ctx.stroke();
+        }
+        
+        // Update position
+        position.current = { x: newX, y: newY };
+        
+        // Redraw turtle at new position
+        drawTurtle();
+        
+        // Schedule next step
+        requestAnimationFrame(animateStep);
+      };
+      
+      // Start animation
+      animateStep();
+    };
+    
+    // Add to animation queue
+    animationQueue.current.push(animateFunction);
+    
+    // Start processing animations if not already in progress
+    if (!animationInProgress.current) {
+      animationInProgress.current = true;
+      processNextAnimation();
     }
   };
 
@@ -136,194 +212,183 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
   }, []);
 
   // Expose methods to parent component
-  useImperativeHandle(ref, () => ({
-    forward: (distance: number) => {
-      // Queue this animation
-      const animateForward = () => {
-        if (!contextRef.current) {
-          processNextAnimation();
-          return;
-        }
-        
-        const ctx = contextRef.current;
+  useImperativeHandle(ref, () => {
+    // Create the interface object
+    const turtleInterface: TurtleHandle = {
+      forward: (distance: number) => {
         const radians = angle.current * Math.PI / 180;
-        const startX = position.current.x;
-        const startY = position.current.y;
-        const endX = startX + distance * Math.cos(radians);
-        const endY = startY + distance * Math.sin(radians);
-        
-        // Number of steps based on animation speed
-        // More steps = smoother but slower animation
-        const steps = Math.max(5, Math.min(Math.abs(distance), animationSpeed.current * 5));
-        let currentStep = 0;
-        
-        // Function for animation step
-        const animateStep = () => {
-          if (currentStep >= steps) {
-            // Animation complete, process next animation
-            processNextAnimation();
-            return;
-          }
-          
-          currentStep++;
-          
-          // Calculate incremental movement
-          const progress = currentStep / steps;
-          const newX = startX + (endX - startX) * progress;
-          const newY = startY + (endY - startY) * progress;
-          
+        const endX = position.current.x + distance * Math.cos(radians);
+        const endY = position.current.y + distance * Math.sin(radians);
+        animateMovement(endX, endY);
+      },
+      
+      right: (degrees: number) => {
+        // Queue this animation
+        const animateRight = () => {
           // Erase the turtle from its previous position
           eraseTurtle();
           
-          // Draw the line segment if pen is down
-          if (isPenDown.current) {
-            ctx.beginPath();
-            ctx.strokeStyle = color.current;
-            ctx.lineWidth = 2;
-            // For smooth continuous lines, only draw from the last position to new position
-            ctx.moveTo(position.current.x, position.current.y);
-            ctx.lineTo(newX, newY);
-            ctx.stroke();
-          }
+          // Update angle
+          angle.current += degrees;
           
-          // Update position
-          position.current = { x: newX, y: newY };
-          
-          // Redraw turtle at new position
+          // Redraw turtle at new angle
           drawTurtle();
           
-          // Schedule next step
-          requestAnimationFrame(animateStep);
+          // Animation complete, process next animation
+          processNextAnimation();
         };
         
-        // Start animation
-        animateStep();
-      };
-      
-      // Add to animation queue
-      animationQueue.current.push(animateForward);
-      
-      // Start processing animations if not already in progress
-      if (!animationInProgress.current) {
-        animationInProgress.current = true;
-        processNextAnimation();
-      }
-    },
-    
-    right: (degrees: number) => {
-      // Queue this animation
-      const animateRight = () => {
-        // Erase the turtle from its previous position
-        eraseTurtle();
+        // Add to animation queue
+        animationQueue.current.push(animateRight);
         
-        // Update angle
-        angle.current += degrees;
-        
-        // Redraw turtle at new angle
-        drawTurtle();
-        
-        // Animation complete, process next animation
-        processNextAnimation();
-      };
-      
-      // Add to animation queue
-      animationQueue.current.push(animateRight);
-      
-      // Start processing animations if not already in progress
-      if (!animationInProgress.current) {
-        animationInProgress.current = true;
-        processNextAnimation();
-      }
-    },
-    
-    left: (degrees: number) => {
-      // Queue this animation
-      const animateLeft = () => {
-        // Erase the turtle from its previous position
-        eraseTurtle();
-        
-        // Update angle
-        angle.current -= degrees;
-        
-        // Redraw turtle at new angle
-        drawTurtle();
-        
-        // Animation complete, process next animation
-        processNextAnimation();
-      };
-      
-      // Add to animation queue
-      animationQueue.current.push(animateLeft);
-      
-      // Start processing animations if not already in progress
-      if (!animationInProgress.current) {
-        animationInProgress.current = true;
-        processNextAnimation();
-      }
-    },
-    
-    penUp: () => {
-      isPenDown.current = false;
-    },
-    
-    penDown: () => {
-      isPenDown.current = true;
-    },
-    
-    setColor: (newColor: string) => {
-      color.current = newColor;
-    },
-    
-    clear: () => {
-      const canvas = canvasRef.current;
-      const ctx = contextRef.current;
-      if (!canvas || !ctx) return;
-      
-      // Clear the canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Reset turtle position
-      position.current = { x: canvas.width / 2, y: canvas.height / 2 };
-      angle.current = -90; // Point upwards
-      
-      // Redraw the turtle
-      drawTurtle();
-      
-      // Clear the animation queue
-      animationQueue.current = [];
-      animationInProgress.current = false;
-    },
-    
-    setAnimationSpeed: (speed: number) => {
-      // Convert speed (0-100) to steps (1-50)
-      // Higher speed value = more steps for smoother animation
-      animationSpeed.current = Math.max(1, Math.round(speed / 2));
-    },
-    
-    demo: () => {
-      // Simple demo to show the turtle's capabilities
-      const self = this as unknown as TurtleHandle;
-      
-      const demoSequence = () => {
-        // Draw a square
-        for (let i = 0; i < 4; i++) {
-          setTimeout(() => {
-            if (i === 0) self.forward(100);
-            else {
-              self.right(90);
-              self.forward(100);
-            }
-          }, i * 500);
+        // Start processing animations if not already in progress
+        if (!animationInProgress.current) {
+          animationInProgress.current = true;
+          processNextAnimation();
         }
-      };
+      },
       
-      // Clear the canvas first
-      self.clear();
+      left: (degrees: number) => {
+        // Queue this animation
+        const animateLeft = () => {
+          // Erase the turtle from its previous position
+          eraseTurtle();
+          
+          // Update angle
+          angle.current -= degrees;
+          
+          // Redraw turtle at new angle
+          drawTurtle();
+          
+          // Animation complete, process next animation
+          processNextAnimation();
+        };
+        
+        // Add to animation queue
+        animationQueue.current.push(animateLeft);
+        
+        // Start processing animations if not already in progress
+        if (!animationInProgress.current) {
+          animationInProgress.current = true;
+          processNextAnimation();
+        }
+      },
       
-      // Start the demo after a short delay
-      setTimeout(demoSequence, 100);
-    }
-  }));
+      penUp: () => {
+        isPenDown.current = false;
+      },
+      
+      penDown: () => {
+        isPenDown.current = true;
+      },
+      
+      setColor: (newColor: string) => {
+        color.current = newColor;
+      },
+      
+      clear: () => {
+        const canvas = canvasRef.current;
+        const ctx = contextRef.current;
+        if (!canvas || !ctx) return;
+        
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Reset turtle position
+        position.current = { x: canvas.width / 2, y: canvas.height / 2 };
+        angle.current = -90; // Point upwards
+        isTurtleVisible.current = true;
+        
+        // Redraw the turtle
+        drawTurtle();
+        
+        // Clear the animation queue
+        animationQueue.current = [];
+        animationInProgress.current = false;
+      },
+      
+      setAnimationSpeed: (speed: number) => {
+        // Store the animation speed (0-100 scale)
+        animationSpeed.current = speed;
+      },
+      
+      hideTurtle: () => {
+        if (isTurtleVisible.current) {
+          // Queue the hide turtle action
+          const animateHideTurtle = () => {
+            // Erase the turtle from its current position
+            eraseTurtle();
+            // Update visibility state
+            isTurtleVisible.current = false;
+            // Process next animation
+            processNextAnimation();
+          };
+          
+          // Add to animation queue
+          animationQueue.current.push(animateHideTurtle);
+          
+          // Start processing the queue if not already in progress
+          if (!animationInProgress.current) {
+            animationInProgress.current = true;
+            processNextAnimation();
+          }
+        }
+      },
+
+      showTurtle: () => {
+        if (!isTurtleVisible.current) {
+          // Queue the show turtle action
+          const animateShowTurtle = () => {
+            // Update visibility state
+            isTurtleVisible.current = true;
+            // Draw the turtle at its current position
+            drawTurtle();
+            // Process next animation
+            processNextAnimation();
+          };
+          
+          // Add to animation queue
+          animationQueue.current.push(animateShowTurtle);
+          
+          // Start processing the queue if not already in progress
+          if (!animationInProgress.current) {
+            animationInProgress.current = true;
+            processNextAnimation();
+          }
+        }
+      },
+
+
+      setPenSize: (size: number) => {
+        console.log(`Setting pen size to ${size}`);
+        penSize.current = size;
+      },
+
+      home: () => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          // Erase the turtle at current position
+          eraseTurtle();
+          
+          // Reset position to center
+          const centerX = canvas.width / 2;
+          const centerY = canvas.height / 2;
+          
+          // Reset heading to upward (preserving the animation for position change)
+          angle.current = -90;
+          
+          // Animate the movement to center
+          animateMovement(centerX, centerY);
+        }
+      },
+
+      setPosition: (x: number, y: number) => {
+        animateMovement(x, y);
+      },
+    };
+    
+    return turtleInterface;
+  });
 
   return (
     <div className="h-100 w-100">
