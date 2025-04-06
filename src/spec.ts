@@ -291,8 +291,8 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       category: CommandCategory.TurtleGraphics
     },
     {
-      name: 'SETXY',
-      aliases: ['SXY'],
+      name: 'SETPOSITION',
+      aliases: ['SETPOS', 'SETXY', 'SXY'],
       description: 'Set turtle X and Y coordinates',
       argumentTypes: [ArgumentType.Number, ArgumentType.Number],
       createCommand: (x: ArgValue, y: ArgValue) => {
@@ -303,7 +303,7 @@ export const LOGO_COMMANDS: CommandSpec[] = [
             ctx.turtle.setPosition?.(xPos, yPos);
           },
           toString(): string {
-            return `SETXY ${xPos} ${yPos}`;
+            return `SETPOSITION ${xPos} ${yPos}`;
           }
         };
       },
@@ -427,9 +427,9 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       name: 'IF',
       aliases: [],
       description: 'conditional commands',
-      argumentTypes: [ArgumentType.Condition, ArgumentType.Block],
+      argumentTypes: [ArgumentType.Number, ArgumentType.Block],
       createCommand: (condition: ArgValue, block: ArgValue) => {
-        const cond = (condition as ConditionValue).value;
+        const cond = (condition as NumberValue).value;
         const commands = (block as BlockValue).commands;
         return {
           execute(ctx: Context): void {
@@ -450,9 +450,9 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       name: 'IFELSE',
       aliases: [],
       description: 'conditional commands',
-      argumentTypes: [ArgumentType.Condition, ArgumentType.Block, ArgumentType.Block],
+      argumentTypes: [ArgumentType.Number, ArgumentType.Block, ArgumentType.Block],
       createCommand: (condition: ArgValue, block: ArgValue, elseBlock: ArgValue) => {
-        const cond = (condition as ConditionValue).value;
+        const cond = (condition as NumberValue).value;
         const commands = (block as BlockValue).commands;
         const elseCommands = (elseBlock as BlockValue).commands;
         return {
