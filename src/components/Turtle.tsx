@@ -279,15 +279,61 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
       },
       
       penUp: () => {
-        isPenDown.current = false;
+        
+        // Queue this animation
+        const animatePenUp = () => {
+          isPenDown.current = false;
+          
+          // Animation complete, process next animation
+          processNextAnimation();
+        };
+        
+        // Add to animation queue
+        animationQueue.current.push(animatePenUp);
+        
+        // Start processing animations if not already in progress
+        if (!animationInProgress.current) {
+          animationInProgress.current = true;
+          processNextAnimation();
+        }
       },
       
       penDown: () => {
-        isPenDown.current = true;
+        // Queue this animation
+        const animatePenDown = () => {
+          isPenDown.current = true;
+          
+          // Animation complete, process next animation
+          processNextAnimation();
+        };
+        
+        // Add to animation queue
+        animationQueue.current.push(animatePenDown);
+        
+        // Start processing animations if not already in progress
+        if (!animationInProgress.current) {
+          animationInProgress.current = true;
+          processNextAnimation();
+        }
       },
       
       setColor: (newColor: string) => {
-        color.current = newColor;
+        // Queue this animation
+        const animateSetColor = () => {
+          color.current = newColor;
+          
+          // Animation complete, process next animation
+          processNextAnimation();
+        };
+        
+        // Add to animation queue
+        animationQueue.current.push(animateSetColor);
+        
+        // Start processing animations if not already in progress
+        if (!animationInProgress.current) {
+          animationInProgress.current = true;
+          processNextAnimation();
+        }
       },
       
       clear: () => {
@@ -301,6 +347,7 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
         // Reset turtle position
         position.current = { x: canvas.width / 2, y: canvas.height / 2 };
         angle.current = -90; // Point upwards
+        isPenDown.current = true;
         isTurtleVisible.current = true;
         
         // Redraw the turtle
@@ -395,14 +442,22 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
           if (!canvas) return;
           const centerX = canvas.width / 2;
           const centerY = canvas.height / 2;
-          if (x === null) x = position.current.x;
-          if (y === null) y = position.current.y;
+          if (x === null) {
+            x = position.current.x;
+          } else {
+            x+= centerX;
+          }
+          if (y === null) {
+            y = position.current.y;
+          } else {
+            y = centerY - y;
+          }
 
           const startX = position.current.x;
           const startY = position.current.y;
-          const endX = centerX + x;
-          const endY = centerY - y;
-          
+          const endX = x;
+          const endY = y;
+                    
           // Number of steps based on animation speed
           // More steps = smoother but slower animation
           const steps = Math.max(5, Math.min(Math.abs(endX - startX) + Math.abs(endY - startY), animationSpeed.current * 5));
