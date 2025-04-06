@@ -1,33 +1,33 @@
 /**
- * Lexer module for the Logo language
- * TypeScript equivalent of the Go implementation
+ * Lexer for the Logo language
+ * Breaks input text into tokens for parsing
  */
+import { commandMap } from '../spec';
 
-// Define token types
 export enum TokenType {
-  COMMAND = 'COMMAND',
-  NUMBER = 'NUMBER',
-  REPEAT = 'REPEAT',
-  OPEN_BRACKET = 'OPEN_BRACKET',
-  CLOSE_BRACKET = 'CLOSE_BRACKET',
-  VARIABLE = 'VARIABLE',
-  PROCEDURE = 'PROCEDURE',
-  TO = 'TO',
-  END = 'END',
-  MAKE = 'MAKE',
-  IF = 'IF',
-  STRING = 'STRING',
-  OPERATOR = 'OPERATOR',
-  COMMENT = 'COMMENT'
+  COMMAND,
+  NUMBER,
+  STRING,
+  VARIABLE,
+  REPEAT,
+  TO,
+  END,
+  OPEN_PARENTHESIS,
+  CLOSE_PARENTHESIS,
+  OPEN_BRACKET,
+  CLOSE_BRACKET,
+  OPERATOR, // New: for expressions like +, -, *, /
+  PROCEDURE,
+  MAKE,
+  IF,
+  COMMENT
 }
 
-// Token represents a parsed token in Logo
 export interface Token {
   type: TokenType;
   value: string;
 }
 
-// Lexer breaks input into tokens
 export class Lexer {
   private input: string;
   private tokens: Token[] = [];
@@ -36,163 +36,91 @@ export class Lexer {
     this.input = input.trim();
   }
 
-  // Tokenize breaks the input into tokens
-  public tokenize(): void {
-    const tokens: Token[] = [];
-    
-    // Use a more flexible tokenization method
-    let input = this.input;
-    input = input.replace(/\[/g, ' [ ');
-    input = input.replace(/\]/g, ' ] ');
-    const words = input.split(/\s+/).filter(word => word !== '');
+  /**
+   * Tokenize the input string into an array of tokens
+   */
+  tokenize(): void {
+    // Split the input by whitespace and filter out empty strings
+    const words = this.input
+      .replace(/\[/g, ' [ ')
+      .replace(/\]/g, ' ] ')
+      .replace(/\(/g, ' ( ')
+      .replace(/\)/g, ' ) ')
+      .replace(/([+\-*/])/g, ' $1 ') // Add spaces around basic operators
+      .replace(/([<>]=?|==|!=)/g, ' $1 ') // Add spaces around comparison operators
+      .split(/\s+/)
+      .filter(word => word.length > 0);
 
-    for (let i = 0; i < words.length; i++) {
-      const word = words[i].toLowerCase();
-      let num: number;
-
-      // Handle comments
-      if (word.startsWith(';')) {
-        // Skip rest of line - in this simplified version, we just break
-        break;
+    // Process each word
+    for (const word of words) {
+      // Check if the word is a number
+      if (/^-?\d+(\.\d+)?$/.test(word)) {
+        this.tokens.push({ type: TokenType.NUMBER, value: word });
+        continue;
       }
 
-      switch (word) {
-        // Movement commands
-        case 'forward':
-        case 'fd':
-          tokens.push({ type: TokenType.COMMAND, value: 'forward' });
-          break;
-        case 'backward':
-        case 'bk':
-          tokens.push({ type: TokenType.COMMAND, value: 'backward' });
-          break;
-        case 'left':
-        case 'lt':
-          tokens.push({ type: TokenType.COMMAND, value: 'left' });
-          break;
-        case 'right':
-        case 'rt':
-          tokens.push({ type: TokenType.COMMAND, value: 'right' });
-          break;
-        case 'setx':
-          tokens.push({ type: TokenType.COMMAND, value: 'setx' });
-          break;
-        case 'sety':
-          tokens.push({ type: TokenType.COMMAND, value: 'sety' });
-          break;
-        case 'setposition':
-        case 'setpos':
-        case 'setxy':
-          tokens.push({ type: TokenType.COMMAND, value: 'setposition' });
-          break;
-        case 'setheading':
-        case 'seth':
-          tokens.push({ type: TokenType.COMMAND, value: 'setheading' });
-          break;
-        case 'home':
-          tokens.push({ type: TokenType.COMMAND, value: 'home' });
-          break;
-        case 'clearscreen':
-        case 'cs':
-          tokens.push({ type: TokenType.COMMAND, value: 'clearscreen' });
-          break;
-
-        // Pen commands
-        case 'penup':
-        case 'pu':
-          tokens.push({ type: TokenType.COMMAND, value: 'penup' });
-          break;
-        case 'pendown':
-        case 'pd':
-          tokens.push({ type: TokenType.COMMAND, value: 'pendown' });
-          break;
-        case 'hideturtle':
-        case 'ht':
-          tokens.push({ type: TokenType.COMMAND, value: 'hideturtle' });
-          break;
-        case 'showturtle':
-        case 'st':
-          tokens.push({ type: TokenType.COMMAND, value: 'showturtle' });
-          break;
-        case 'setpencolor':
-        case 'setpc':
-          tokens.push({ type: TokenType.COMMAND, value: 'setpencolor' });
-          break;
-        case 'setpensize':
-        case 'setps':
-          tokens.push({ type: TokenType.COMMAND, value: 'setpensize' });
-          break;
-
-        // Control structures
-        case 'repeat':
-        case 'rp':
-          tokens.push({ type: TokenType.REPEAT, value: 'repeat' });
-          break;
-        case 'to':
-          tokens.push({ type: TokenType.TO, value: 'to' });
-          break;
-        case 'end':
-          tokens.push({ type: TokenType.END, value: 'end' });
-          break;
-        case 'if':
-          tokens.push({ type: TokenType.IF, value: 'if' });
-          break;
-        case 'make':
-          tokens.push({ type: TokenType.MAKE, value: 'make' });
-          break;
-
-        // Brackets and operators
-        case '[':
-          tokens.push({ type: TokenType.OPEN_BRACKET, value: '[' });
-          break;
-        case ']':
-          tokens.push({ type: TokenType.CLOSE_BRACKET, value: ']' });
-          break;
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '<':
-        case '>':
-        case '=':
-          tokens.push({ type: TokenType.OPERATOR, value: word });
-          break;
-
-        default:
-          // Check if it's a number
-          num = parseFloat(word);
-          if (!isNaN(num)) {
-            tokens.push({ type: TokenType.NUMBER, value: num.toString() });
-            continue;
-          }
-
-          // Check if it's a variable (starts with ":")
-          if (word.startsWith(':')) {
-            tokens.push({ type: TokenType.VARIABLE, value: word.substring(1) });
-            continue;
-          }
-
-          // Check if it's a string (starts with ")
-          if (word.startsWith('"')) {
-            tokens.push({ type: TokenType.STRING, value: word.substring(1) });
-            continue;
-          }
-
-          // Assume it's a procedure name
-          tokens.push({ type: TokenType.PROCEDURE, value: word });
+      // Check if the word is a string (starts with ")
+      if (word.startsWith('"')) {
+        this.tokens.push({ type: TokenType.STRING, value: word.substring(1) });
+        continue;
       }
+
+      // Check if the word is a variable (starts with :)
+      if (word.startsWith(':')) {
+        this.tokens.push({ type: TokenType.VARIABLE, value: word.substring(1) });
+        continue;
+      }
+
+      // Check if the word is an operator
+      if (['+', '-', '*', '/', '<', '>', '<=', '>=', '==', '!='].includes(word)) {
+        this.tokens.push({ type: TokenType.OPERATOR, value: word });
+        continue;
+      }
+
+      if (word === '(') {
+        this.tokens.push({ type: TokenType.OPEN_PARENTHESIS, value: '(' });
+        continue;
+      }
+
+      if (word === ')') {
+        this.tokens.push({ type: TokenType.CLOSE_PARENTHESIS, value: ')' });
+        continue;
+      }
+      // Check for brackets
+      if (word === '[') {
+        this.tokens.push({ type: TokenType.OPEN_BRACKET, value: '[' });
+        continue;
+      }
+
+      if (word === ']') {
+        this.tokens.push({ type: TokenType.CLOSE_BRACKET, value: ']' });
+        continue;
+      }
+
+      // Handle reserved control keywords first
+      const lowerWord = word.toLowerCase();
+
+      // Check if it's a defined command in our spec
+      if (commandMap.has(lowerWord)) {
+        const commandSpec = commandMap.get(lowerWord)!;
+        // Use the official name from the command spec
+        this.tokens.push({ type: TokenType.COMMAND, value: commandSpec.name.toLowerCase() });
+        continue;
+      }
+
+      this.tokens.push({ type: TokenType.PROCEDURE, value: lowerWord });
     }
 
-    this.tokens = tokens;
-
     // Log the parsed tokens (using console.log for browser environment)
-    tokens.forEach(token => {
-      console.debug(`[Lexer] token: ${token.type}:${token.value}`);
+    this.tokens.forEach(token => {
+      console.debug(`[Lexer] token: ${TokenType[token.type]}:${token.value}`);
     });
   }
 
-  // getTokens returns the parsed tokens
-  public getTokens(): Token[] {
+  /**
+   * Returns the array of tokens
+   */
+  getTokens(): Token[] {
     return this.tokens;
   }
 }

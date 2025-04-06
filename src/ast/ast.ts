@@ -1,3 +1,9 @@
+// Re-export all command types from the spec.ts file
+export * from '../spec';
+
+// This file is kept for backward compatibility
+// All command implementations have been moved to spec.ts
+
 // Import the TurtleHandle interface from our Turtle component
 import { TurtleHandle } from '../components/Turtle';
 
@@ -329,5 +335,47 @@ export class Program {
 
   toString(): string {
     return this.commands.map(cmd => cmd.toString()).join('\n');
+  }
+}
+
+/**
+ * Command to set the X position of the turtle
+ */
+export class SetXCommand implements Command {
+  value: number;
+
+  constructor(value: number) {
+    this.value = value;
+  }
+
+  execute(ctx: Context): void {
+    // Use the current Y position from the Turtle's setPosition method
+    // Since we don't have a getPosition, we'll need to pass null for Y to keep it unchanged
+    ctx.turtle.setPosition?.(this.value, null);
+  }
+  
+  toString(): string {
+    return `SETX ${this.value}`;
+  }
+}
+
+/**
+ * Command to set the Y position of the turtle
+ */
+export class SetYCommand implements Command {
+  value: number;
+
+  constructor(value: number) {
+    this.value = value;
+  }
+
+  execute(ctx: Context): void {
+    // Use the current X position from the Turtle's setPosition method
+    // Since we don't have a getPosition, we'll need to pass null for X to keep it unchanged
+    ctx.turtle.setPosition?.(null, this.value);
+  }
+  
+  toString(): string {
+    return `SETY ${this.value}`;
   }
 }

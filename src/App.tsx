@@ -5,9 +5,10 @@ import Turtle, { TurtleHandle } from './components/Turtle'
 import CodeEditor from './components/CodeEditor'
 import OutputPanel from './components/OutputPanel'
 import SpeedSlider from './components/SpeedSlider'
-import { parseProgram } from './parser/parser'
-import { Context } from './ast/ast'
-import { Command } from './ast/ast'
+import { parse } from './parser/parser'
+import { Lexer } from './parser/lexer'
+import { Context } from './spec'
+import { Program } from './spec'
 
 function App() {
   const [code, setCode] = useState<string>('')
@@ -29,15 +30,25 @@ function App() {
       // Clear previous output and turtle drawings
       setOutput('')
       turtleRef.current.clear();
-      
+      console.clear();
       // Parse the Logo code
-      const program = parseProgram(code);
+      const lexer = new Lexer(code);
+      lexer.tokenize();
+      const program = parse(code, lexer.getTokens());
+      
+      // If there are errors, display them and stop execution
+      if (program.errors.length > 0) {
+        setOutput(`Parsing errors:\n${program.errors.map(err => `- ${err}`).join('\n')}`);
+        return;
+      }
+      
+      console.log('Program:', program.toString());
       
       // Create context with the turtle reference
       const context = new Context(turtleRef.current);
       
       // Execute the program with delays
-      executeWithDelay(program.commands, context, 0);
+      executeWithDelay(program, context, 0);
       
       // Set initial output
       setOutput(`Executing program...\n${program.toString()}`);
@@ -49,19 +60,19 @@ function App() {
   }
   
   // Execute commands one by one with delay
-  const executeWithDelay = (commands: Command[], context: Context, index: number) => {
-    if (index >= commands.length) {
+  const executeWithDelay = (program: Program, context: Context, index: number) => {
+    if (index >= program.length) {
       setOutput(prev => `Program executed successfully.\n${prev.split('\n').slice(1).join('\n')}`);
       return;
     }
     
     // Execute the current command
     try {
-      commands[index].execute(context);
+      program.executeCommand(context, index);
       
       // Schedule the next command after delay
       setTimeout(() => {
-        executeWithDelay(commands, context, index + 1);
+        executeWithDelay(program, context, index + 1);
       }, getDelay());
     } catch (error) {
       console.error('Execution error:', error);
