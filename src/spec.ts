@@ -413,7 +413,7 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     },
     {
       name: 'REPEAT',
-      aliases: [],
+      aliases: ['RP'],
       description: 'Repeat a block of commands a specified number of times',
       example: 'REPEAT 4 [ FORWARD 100 RIGHT 90 ]',
       argumentTypes: [ArgumentType.Number, ArgumentType.Block],
