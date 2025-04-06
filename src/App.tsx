@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/HelpIcon.css';
@@ -10,8 +10,7 @@ import SpeedSlider from './components/SpeedSlider'
 import Docs from './components/Docs'
 import { parse } from './parser/parser'
 import { Lexer } from './parser/lexer'
-import { Context } from './spec'
-import { Program } from './spec'
+import { Context, Program } from './spec'
 
 function App() {
   const [code, setCode] = useState<string>('')
@@ -20,12 +19,18 @@ function App() {
   const [isDocsOpen, setIsDocsOpen] = useState(false)
   const turtleRef = useRef<TurtleHandle>(null)
   
-  // Calculate delay in milliseconds from speed (0-100)
   // Higher speed value = less delay
   const getDelay = () => {
     // Map speed 0-100 to delay 500-0ms (500ms at slowest, 0ms at fastest)
     return 500 - (speed * 5);
   }
+  
+  useEffect(() => {
+    if (turtleRef.current) {
+      // Convert speed (0-100) to animation speed for the turtle
+      turtleRef.current.setAnimationSpeed(speed);
+    }
+  }, [speed]);
   
   const handleExecute = () => {
     if (!turtleRef.current) return;
@@ -38,7 +43,7 @@ function App() {
       // Parse the Logo code
       const lexer = new Lexer(code);
       lexer.tokenize();
-      const program = parse(code, lexer.getTokens());
+      const program: Program = parse(code, lexer.getTokens());
       
       // If there are errors, display them and stop execution
       if (program.errors.length > 0) {
@@ -65,14 +70,14 @@ function App() {
   
   // Execute commands one by one with delay
   const executeWithDelay = (program: Program, context: Context, index: number) => {
-    if (index >= program.length) {
+    if (index >= program.commands.length) {
       setOutput(prev => `Program executed successfully.\n${prev.split('\n').slice(1).join('\n')}`);
       return;
     }
     
     // Execute the current command
     try {
-      program.executeCommand(context, index);
+      program.commands[index].execute(context);
       
       // Schedule the next command after delay
       setTimeout(() => {
@@ -86,11 +91,6 @@ function App() {
   
   const handleSpeedChange = (newSpeed: number) => {
     setSpeed(newSpeed);
-    
-    // Update the turtle's animation speed when the slider changes
-    if (turtleRef.current) {
-      turtleRef.current.setAnimationSpeed(newSpeed);
-    }
   }
   
   const handleClear = () => {
@@ -103,13 +103,17 @@ function App() {
     setOutput('');
   }
 
+  const toggleDocs = () => {
+    setIsDocsOpen(!isDocsOpen);
+  }
+
   return (
     <div className="container-fluid p-0">
       <header className="bg-dark text-white p-3">
         <h1>HoneyLogo</h1>
         <button 
           className="help-icon" 
-          onClick={() => setIsDocsOpen(true)}
+          onClick={toggleDocs}
           aria-label="Help"
         >
           ?
@@ -141,7 +145,7 @@ function App() {
       </div>
       
       {/* Documentation Modal */}
-      <Docs isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} />
+      {isDocsOpen && <Docs isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} />}
     </div>
   )
 }
