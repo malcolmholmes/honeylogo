@@ -2,7 +2,7 @@ module github.com/malcolmholmes/honeylogo
 
 go 1.23.0
 
-require gitlab.com/malcolmholmes/victor v0.0.0-20250404075055-2f6742071eb8
+require gitlab.com/malcolmholmes/victor v0.0.0-20250405204646-0548ab87d17f
 
 require (
 	cloud.google.com/go v0.116.0 // indirect

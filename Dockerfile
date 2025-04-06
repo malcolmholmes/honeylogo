@@ -13,7 +13,10 @@ COPY . .
 RUN bun build src/main.tsx \
                 --target=browser \
                 --outdir=public \
-                --minify
+                --minify && \
+    cp index.html.tmpl public/index.html && \
+    NOW=$(date +%s) && \
+    sed -i "s/TIMESTAMP/${NOW}/g" public/index.html
 
 # Stage 2: Build Go application
 FROM golang:1.23-alpine AS go-builder
