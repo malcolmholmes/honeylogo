@@ -94,6 +94,7 @@ export interface CommandSpec {
   name: string;
   aliases: string[];
   description: string;
+  example?: string;
   argumentTypes: ArgumentType[];
   createCommand: (...args: ArgValue[]) => Command;
   category: CommandCategory;
@@ -118,7 +119,8 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     {
       name: 'FORWARD',
       aliases: ['FD'],
-      description: 'Move turtle forward',
+      description: 'Move the turtle forward by the specified distance',
+      example: 'FORWARD 100',
       argumentTypes: [ArgumentType.Number],
       createCommand: (distance: ArgValue) => {
         const dist = (distance as NumberValue).value;
@@ -154,7 +156,8 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     {
       name: 'LEFT',
       aliases: ['LT'],
-      description: 'Turn turtle left',
+      description: 'Turn the turtle left by the specified angle in degrees',
+      example: 'LEFT 90',
       argumentTypes: [ArgumentType.Number],
       createCommand: (angle: ArgValue) => {
         const ang = (angle as NumberValue).value;
@@ -172,7 +175,8 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     {
       name: 'RIGHT',
       aliases: ['RT'],
-      description: 'Turn turtle right',
+      description: 'Turn the turtle right by the specified angle in degrees',
+      example: 'RIGHT 90',
       argumentTypes: [ArgumentType.Number],
       createCommand: (angle: ArgValue) => {
         const ang = (angle as NumberValue).value;
@@ -190,7 +194,8 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     {
       name: 'PENDOWN',
       aliases: ['PD'],
-      description: 'Put pen down for drawing',
+      description: 'Lower the pen, so the turtle draws when it moves',
+      example: 'PENDOWN',
       argumentTypes: [],
       createCommand: () => {
         return {
@@ -207,7 +212,8 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     {
       name: 'PENUP',
       aliases: ['PU'],
-      description: 'Lift pen up',
+      description: 'Lift the pen, so the turtle does not draw when it moves',
+      example: 'PENUP',
       argumentTypes: [],
       createCommand: () => {
         return {
@@ -224,7 +230,8 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     {
       name: 'HIDETURTLE',
       aliases: ['HT'],
-      description: 'Hide the turtle cursor',
+      description: 'Hide the turtle',
+      example: 'HIDETURTLE',
       argumentTypes: [],
       createCommand: () => {
         return {
@@ -241,7 +248,8 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     {
       name: 'SHOWTURTLE',
       aliases: ['ST'],
-      description: 'Show the turtle cursor',
+      description: 'Show the turtle',
+      example: 'SHOWTURTLE',
       argumentTypes: [],
       createCommand: () => {
         return {
@@ -294,6 +302,7 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       name: 'SETPOSITION',
       aliases: ['SETPOS', 'SETXY', 'SXY'],
       description: 'Set turtle X and Y coordinates',
+      example: 'SETPOSITION 100 100',
       argumentTypes: [ArgumentType.Number, ArgumentType.Number],
       createCommand: (x: ArgValue, y: ArgValue) => {
         const xPos = (x as NumberValue).value;
@@ -348,7 +357,8 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     {
       name: 'HOME',
       aliases: [],
-      description: 'Move turtle to the center of the screen',
+      description: 'Move the turtle to the center of the canvas, facing up',
+      example: 'HOME',
       argumentTypes: [],
       createCommand: () => {
         return {
@@ -363,20 +373,21 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       category: CommandCategory.TurtleGraphics
     },
     {
-      name: 'SETPC',
-      aliases: ['SPC'],
-      description: 'Set pen color',
-      argumentTypes: [ArgumentType.Number],
-      createCommand: (color: ArgValue) => {
-        const colorValue = (color as NumberValue).value;
+      name: 'SETCOLOR',
+      aliases: ['SC'],
+      description: 'Set the pen color',
+      example: 'SETCOLOR "red"',
+      argumentTypes: [ArgumentType.String],
+      createCommand: (colorValue: ArgValue) => {
+        const color = (colorValue as StringValue).value;
         return {
           execute(ctx: Context): void {
             // Convert to CSS color format
-            const cssColor = `rgb(${colorValue}, 0, 0)`;
+            const cssColor = `rgb(${color}, 0, 0)`;
             ctx.turtle.setColor(cssColor);
           },
           toString(): string {
-            return `SETCOLOR ${colorValue}`;
+            return `SETCOLOR ${color}`;
           }
         };
       },
@@ -402,8 +413,9 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     },
     {
       name: 'REPEAT',
-      aliases: ['RP'],
-      description: 'Repeat commands',
+      aliases: [],
+      description: 'Repeat a block of commands a specified number of times',
+      example: 'REPEAT 4 [ FORWARD 100 RIGHT 90 ]',
       argumentTypes: [ArgumentType.Number, ArgumentType.Block],
       createCommand: (count: ArgValue, block: ArgValue) => {
         const times = (count as NumberValue).value;
@@ -427,6 +439,7 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       name: 'IF',
       aliases: [],
       description: 'conditional commands',
+      example: 'IF 1 == 1 [ FORWARD 100 ]',
       argumentTypes: [ArgumentType.Number, ArgumentType.Block],
       createCommand: (condition: ArgValue, block: ArgValue) => {
         const cond = (condition as NumberValue).value;
@@ -450,6 +463,7 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       name: 'IFELSE',
       aliases: [],
       description: 'conditional commands',
+      example: 'IFELSE 1 == 1 [ FORWARD 100 ] [ RIGHT 90 ]',
       argumentTypes: [ArgumentType.Number, ArgumentType.Block, ArgumentType.Block],
       createCommand: (condition: ArgValue, block: ArgValue, elseBlock: ArgValue) => {
         const cond = (condition as NumberValue).value;
@@ -477,6 +491,11 @@ export const LOGO_COMMANDS: CommandSpec[] = [
   ];
 
 export const commandList = LOGO_COMMANDS;
+
+/**
+ * A list of all available Logo commands
+ */
+export const commandDefinitions: CommandSpec[] = LOGO_COMMANDS;
 
 /**
  * Create a map of commands for faster lookup

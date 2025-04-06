@@ -1,10 +1,13 @@
 import { useState, useRef } from 'react'
 import './App.css'
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './styles/HelpIcon.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import Turtle, { TurtleHandle } from './components/Turtle'
 import CodeEditor from './components/CodeEditor'
 import OutputPanel from './components/OutputPanel'
 import SpeedSlider from './components/SpeedSlider'
+import Docs from './components/Docs'
 import { parse } from './parser/parser'
 import { Lexer } from './parser/lexer'
 import { Context } from './spec'
@@ -14,6 +17,7 @@ function App() {
   const [code, setCode] = useState<string>('')
   const [output, setOutput] = useState<string>('')
   const [speed, setSpeed] = useState<number>(50) // Default speed (0-100)
+  const [isDocsOpen, setIsDocsOpen] = useState(false)
   const turtleRef = useRef<TurtleHandle>(null)
   
   // Calculate delay in milliseconds from speed (0-100)
@@ -103,6 +107,13 @@ function App() {
     <div className="container-fluid p-0">
       <header className="bg-dark text-white p-3">
         <h1>HoneyLogo</h1>
+        <button 
+          className="help-icon" 
+          onClick={() => setIsDocsOpen(true)}
+          aria-label="Help"
+        >
+          ?
+        </button>
       </header>
       
       <div className="row g-0 main-content">
@@ -128,6 +139,9 @@ function App() {
           <Turtle ref={turtleRef} />
         </div>
       </div>
+      
+      {/* Documentation Modal */}
+      <Docs isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} />
     </div>
   )
 }
