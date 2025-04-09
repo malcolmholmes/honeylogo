@@ -1,7 +1,10 @@
 /**
  * Logo language parser types
  */
-import { Command } from '../ast/ast';
+/**
+ * Command is the interface for all Logo commands
+ */
+import { Command } from '../spec';
 
 /**
  * Defines the possible types for Logo arguments
@@ -122,5 +125,64 @@ export class BlockValue extends ArgValue {
   
   toString() { 
     return `[ ${this.commands.map(cmd => cmd.toString()).join(' ')} ]`; 
+  }
+}
+
+/**
+ * Represents a command that returns a value
+ */
+export class CommandValue extends ArgValue {
+  constructor(public command: Command) { 
+    super(); 
+  }
+  
+  get type() { 
+    // Commands in expressions are assumed to return numbers
+    return ArgumentType.Number; 
+  }
+  
+  toString() { 
+    return this.command.toString(); 
+  }
+}
+
+/**
+ * Represents an operation between two values
+ * This is used for binary expressions that need to be evaluated at runtime
+ */
+export class OperationValue extends ArgValue {
+  constructor(
+    public operator: string, 
+    public left: ArgValue, 
+    public right: ArgValue
+  ) { 
+    super(); 
+  }
+  
+  get type() {
+    // Operations are assumed to return numbers
+    return ArgumentType.Number; 
+  }
+  
+  toString() { 
+    return `${this.left.toString()} ${this.operator} ${this.right.toString()}`; 
+  }
+}
+
+/**
+ * Represents a variable reference that will be resolved at runtime
+ */
+export class VariableValue extends ArgValue {
+  constructor(public name: string) { 
+    super(); 
+  }
+  
+  get type() {
+    // Variables can't know their type until runtime resolution
+    return ArgumentType.Number; // Default assumption, will be checked at runtime
+  }
+  
+  toString() { 
+    return `:${this.name}`; 
   }
 }

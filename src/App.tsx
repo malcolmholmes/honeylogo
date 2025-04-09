@@ -51,19 +51,16 @@ function App() {
         return;
       }
       
-      console.log('Program:', program.toString());
+      // Create execution context and execute the program
+      const context = new Context(
+        turtleRef.current, 
+        (message) => setOutput(prev => `${message}\n${prev}`)
+      );
       
-      // Create context with the turtle reference
-      const context = new Context(turtleRef.current);
-      
-      // Execute the program with delays
+      // Start executing commands with delay
       executeWithDelay(program, context, 0);
-      
-      // Set initial output
-      setOutput(`Executing program...\n${program.toString()}`);
     } catch (error) {
-      // Handle any errors
-      console.error('Execution error:', error);
+      console.error(error);
       setOutput(`Error: ${error instanceof Error ? error.message : String(error)}`);
     }
   }

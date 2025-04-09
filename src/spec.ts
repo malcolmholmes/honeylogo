@@ -11,7 +11,9 @@ import {
   NumberValue, 
   StringValue,
   BlockValue,
-  ConditionValue
+  CommandValue,
+  OperationValue,
+  VariableValue
 } from './parser/types';
 
 /**
@@ -19,9 +21,27 @@ import {
  */
 export class Context {
   turtle: TurtleHandle;
+  variables: Map<string, ArgValue>;
+  lastResult: ArgValue | null;
+  output: (message: string) => void;
 
-  constructor(turtle: TurtleHandle) {
+  constructor(turtle: TurtleHandle, outputCallback: (message: string) => void = () => {}) {
     this.turtle = turtle;
+    this.variables = new Map<string, ArgValue>();
+    this.lastResult = null;
+    this.output = outputCallback;
+  }
+  
+  setVariable(name: string, value: ArgValue): void {
+    this.variables.set(name.toLowerCase(), value);
+  }
+  
+  getVariable(name: string): ArgValue | undefined {
+    return this.variables.get(name.toLowerCase());
+  }
+  
+  setLastResult(value: ArgValue | null): void {
+    this.lastResult = value;
   }
 }
 
@@ -29,7 +49,7 @@ export class Context {
  * Command is the interface for all Logo commands
  */
 export interface Command {
-  execute(ctx: Context): void;
+  execute(ctx: Context): ArgValue | void;
   toString(): string;
 }
 
@@ -48,15 +68,23 @@ export class Program implements Iterable<Command> {
 
   execute(ctx: Context): void {
     for (const cmd of this.commands) {
-      cmd.execute(ctx);
+      const result = cmd.execute(ctx);
+      if (result !== undefined) {
+        ctx.setLastResult(result);
+      }
     }
   }
   
   // Execute a specific command by index
-  executeCommand(ctx: Context, index: number): void {
+  executeCommand(ctx: Context, index: number): ArgValue | void {
     if (index >= 0 && index < this.commands.length) {
-      this.commands[index].execute(ctx);
+      const result = this.commands[index].execute(ctx);
+      if (result !== undefined) {
+        ctx.setLastResult(result);
+      }
+      return result;
     }
+    return undefined;
   }
 
   toString(): string {
@@ -96,6 +124,7 @@ export interface CommandSpec {
   description: string;
   example?: string;
   argumentTypes: ArgumentType[];
+  returnTypes?: ArgumentType[];
   createCommand: (...args: ArgValue[]) => Command;
   category: CommandCategory;
 }
@@ -109,7 +138,8 @@ export enum CommandCategory {
   ListProcessing = 'List Processing',
   ControlStructures = 'Control Structures',
   Variables = 'Variables',
-  IOOperations = 'Input/Output Operations'
+  IOOperations = 'Input/Output Operations',
+  MathsFunctions = 'Mathematical Functions',
 }
 
 /**
@@ -123,13 +153,18 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       example: 'FORWARD 100',
       argumentTypes: [ArgumentType.Number],
       createCommand: (distance: ArgValue) => {
-        const dist = (distance as NumberValue).value;
         return {
           execute(ctx: Context): void {
-            ctx.turtle.forward(dist);
+            // Evaluate the argument to handle nested commands
+            const evaluatedDistance = evaluateArgValue(ctx, distance);
+            if (evaluatedDistance.type !== ArgumentType.Number) {
+              throw new Error('FORWARD command requires a number');
+            }
+            const distanceValue = (evaluatedDistance as NumberValue).value;
+            ctx.turtle.forward(distanceValue);
           },
           toString(): string {
-            return `FORWARD ${dist}`;
+            return `FORWARD ${distance.toString()}`;
           }
         };
       },
@@ -141,13 +176,18 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       description: 'Move turtle backward',
       argumentTypes: [ArgumentType.Number],
       createCommand: (distance: ArgValue) => {
-        const dist = (distance as NumberValue).value;
         return {
           execute(ctx: Context): void {
-            ctx.turtle.forward(-dist);
+            // Evaluate the argument to handle nested commands
+            const evaluatedDistance = evaluateArgValue(ctx, distance);
+            if (evaluatedDistance.type !== ArgumentType.Number) {
+              throw new Error('BACK command requires a number');
+            }
+            const distanceValue = (evaluatedDistance as NumberValue).value;
+            ctx.turtle.forward(-distanceValue);
           },
           toString(): string {
-            return `BACK ${dist}`;
+            return `BACK ${distance.toString()}`;
           }
         };
       },
@@ -160,13 +200,18 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       example: 'LEFT 90',
       argumentTypes: [ArgumentType.Number],
       createCommand: (angle: ArgValue) => {
-        const ang = (angle as NumberValue).value;
         return {
           execute(ctx: Context): void {
-            ctx.turtle.left(ang);
+            // Evaluate the argument to handle nested commands
+            const evaluatedAngle = evaluateArgValue(ctx, angle);
+            if (evaluatedAngle.type !== ArgumentType.Number) {
+              throw new Error('LEFT command requires a number');
+            }
+            const angleValue = (evaluatedAngle as NumberValue).value;
+            ctx.turtle.left(angleValue);
           },
           toString(): string {
-            return `LEFT ${ang}`;
+            return `LEFT ${angle.toString()}`;
           }
         };
       },
@@ -179,13 +224,18 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       example: 'RIGHT 90',
       argumentTypes: [ArgumentType.Number],
       createCommand: (angle: ArgValue) => {
-        const ang = (angle as NumberValue).value;
         return {
           execute(ctx: Context): void {
-            ctx.turtle.right(ang);
+            // Evaluate the argument to handle nested commands
+            const evaluatedAngle = evaluateArgValue(ctx, angle);
+            if (evaluatedAngle.type !== ArgumentType.Number) {
+              throw new Error('RIGHT command requires a number');
+            }
+            const angleValue = (evaluatedAngle as NumberValue).value;
+            ctx.turtle.right(angleValue);
           },
           toString(): string {
-            return `RIGHT ${ang}`;
+            return `RIGHT ${angle.toString()}`;
           }
         };
       },
@@ -286,13 +336,18 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       description: 'Set turtle heading',
       argumentTypes: [ArgumentType.Number],
       createCommand: (angle: ArgValue) => {
-        const heading = (angle as NumberValue).value;
         return {
           execute(ctx: Context): void {
-            ctx.turtle.setHeading?.(heading);
+            // Evaluate the argument to handle nested commands
+            const evaluatedAngle = evaluateArgValue(ctx, angle);
+            if (evaluatedAngle.type !== ArgumentType.Number) {
+              throw new Error('SETHEADING command requires a number');
+            }
+            const angleValue = (evaluatedAngle as NumberValue).value;
+            ctx.turtle.setHeading?.(angleValue);
           },
           toString(): string {
-            return `SETHEADING ${heading}`;
+            return `SETHEADING ${angle.toString()}`;
           }
         };
       },
@@ -305,14 +360,20 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       example: 'SETPOSITION 100 100',
       argumentTypes: [ArgumentType.Number, ArgumentType.Number],
       createCommand: (x: ArgValue, y: ArgValue) => {
-        const xPos = (x as NumberValue).value;
-        const yPos = (y as NumberValue).value;
         return {
           execute(ctx: Context): void {
-            ctx.turtle.setPosition?.(xPos, yPos);
+            // Evaluate the arguments to handle nested commands
+            const evaluatedX = evaluateArgValue(ctx, x);
+            const evaluatedY = evaluateArgValue(ctx, y);
+            if (evaluatedX.type !== ArgumentType.Number || evaluatedY.type !== ArgumentType.Number) {
+              throw new Error('SETPOSITION command requires two numbers');
+            }
+            const xValue = (evaluatedX as NumberValue).value;
+            const yValue = (evaluatedY as NumberValue).value;
+            ctx.turtle.setPosition?.(xValue, yValue);
           },
           toString(): string {
-            return `SETPOSITION ${xPos} ${yPos}`;
+            return `SETPOSITION ${x.toString()} ${y.toString()}`;
           }
         };
       },
@@ -324,13 +385,18 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       description: 'Set the X coordinate of the turtle',
       argumentTypes: [ArgumentType.Number],
       createCommand: (x: ArgValue) => {
-        const xPos = (x as NumberValue).value;
         return {
           execute(ctx: Context): void {
-            ctx.turtle.setPosition?.(xPos, null);
+            // Evaluate the argument to handle nested commands
+            const evaluatedX = evaluateArgValue(ctx, x);
+            if (evaluatedX.type !== ArgumentType.Number) {
+              throw new Error('SETX command requires a number');
+            }
+            const xValue = (evaluatedX as NumberValue).value;
+            ctx.turtle.setPosition?.(xValue, null);
           },
           toString(): string {
-            return `SETX ${xPos}`;
+            return `SETX ${x.toString()}`;
           }
         };
       },
@@ -342,13 +408,18 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       description: 'Set the Y coordinate of the turtle',
       argumentTypes: [ArgumentType.Number],
       createCommand: (y: ArgValue) => {
-        const yPos = (y as NumberValue).value;
         return {
           execute(ctx: Context): void {
-            ctx.turtle.setPosition?.(null, yPos);
+            // Evaluate the argument to handle nested commands
+            const evaluatedY = evaluateArgValue(ctx, y);
+            if (evaluatedY.type !== ArgumentType.Number) {
+              throw new Error('SETY command requires a number');
+            }
+            const yValue = (evaluatedY as NumberValue).value;
+            ctx.turtle.setPosition?.(null, yValue);
           },
           toString(): string {
-            return `SETY ${yPos}`;
+            return `SETY ${y.toString()}`;
           }
         };
       },
@@ -379,15 +450,20 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       example: 'SETCOLOR "red"',
       argumentTypes: [ArgumentType.String],
       createCommand: (colorValue: ArgValue) => {
-        const color = (colorValue as StringValue).value;
         return {
           execute(ctx: Context): void {
+            // Evaluate the argument to handle nested commands
+            const evaluatedColor = evaluateArgValue(ctx, colorValue);
+            if (evaluatedColor.type !== ArgumentType.String) {
+              throw new Error('SETCOLOR command requires a string');
+            }
+            const color = (evaluatedColor as StringValue).value;
             // Convert to CSS color format
             const cssColor = `rgb(${color}, 0, 0)`;
             ctx.turtle.setColor(cssColor);
           },
           toString(): string {
-            return `SETCOLOR ${color}`;
+            return `SETCOLOR ${colorValue.toString()}`;
           }
         };
       },
@@ -399,13 +475,18 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       description: 'Set pen size',
       argumentTypes: [ArgumentType.Number],
       createCommand: (size: ArgValue) => {
-        const penSize = (size as NumberValue).value;
         return {
           execute(ctx: Context): void {
+            // Evaluate the argument to handle nested commands
+            const evaluatedSize = evaluateArgValue(ctx, size);
+            if (evaluatedSize.type !== ArgumentType.Number) {
+              throw new Error('SETPENSIZE command requires a number');
+            }
+            const penSize = (evaluatedSize as NumberValue).value;
             ctx.turtle.setPenSize?.(penSize);
           },
           toString(): string {
-            return `SETPENSIZE ${penSize}`;
+            return `SETPENSIZE ${size.toString()}`;
           }
         };
       },
@@ -418,18 +499,24 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       example: 'REPEAT 4 [ FORWARD 100 RIGHT 90 ]',
       argumentTypes: [ArgumentType.Number, ArgumentType.Block],
       createCommand: (count: ArgValue, block: ArgValue) => {
-        const times = (count as NumberValue).value;
-        const commands = (block as BlockValue).commands;
         return {
           execute(ctx: Context): void {
+            // Evaluate the argument to handle nested commands
+            const evaluatedCount = evaluateArgValue(ctx, count);
+            if (evaluatedCount.type !== ArgumentType.Number) {
+              throw new Error('REPEAT command requires a number');
+            }
+            const times = (evaluatedCount as NumberValue).value;
+            const commandsToRepeat = (block as BlockValue).commands;
             for (let i = 0; i < times; i++) {
-              for (const cmd of commands) {
+              for (const cmd of commandsToRepeat) {
                 cmd.execute(ctx);
               }
             }
           },
           toString(): string {
-            return `REPEAT ${times} [ ${commands.map(cmd => cmd.toString()).join(' ')} ]`;
+            const commandsToRepeat = (block as BlockValue).commands;
+            return `REPEAT ${count.toString()} [ ${commandsToRepeat.map((cmd: Command) => cmd.toString()).join(' ')} ]`;
           }
         };
       },
@@ -442,18 +529,24 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       example: 'IF 1 == 1 [ FORWARD 100 ]',
       argumentTypes: [ArgumentType.Number, ArgumentType.Block],
       createCommand: (condition: ArgValue, block: ArgValue) => {
-        const cond = (condition as NumberValue).value;
-        const commands = (block as BlockValue).commands;
         return {
           execute(ctx: Context): void {
+            // Evaluate the argument to handle nested commands
+            const evaluatedCondition = evaluateArgValue(ctx, condition);
+            if (evaluatedCondition.type !== ArgumentType.Number) {
+              throw new Error('IF command requires a number');
+            }
+            const cond = (evaluatedCondition as NumberValue).value;
+            const commandsToExecute = (block as BlockValue).commands;
             if (cond) {
-              for (const cmd of commands) {
+              for (const cmd of commandsToExecute) {
                 cmd.execute(ctx);
               }
             }
           },
           toString(): string {
-            return `IF ${cond} [ ${commands.map(cmd => cmd.toString()).join(' ')} ]`;
+            const commandsToExecute = (block as BlockValue).commands;
+            return `IF ${condition.toString()} [ ${commandsToExecute.map((cmd: Command) => cmd.toString()).join(' ')} ]`;
           }
         };
       },
@@ -466,28 +559,115 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       example: 'IFELSE 1 == 1 [ FORWARD 100 ] [ RIGHT 90 ]',
       argumentTypes: [ArgumentType.Number, ArgumentType.Block, ArgumentType.Block],
       createCommand: (condition: ArgValue, block: ArgValue, elseBlock: ArgValue) => {
-        const cond = (condition as NumberValue).value;
-        const commands = (block as BlockValue).commands;
-        const elseCommands = (elseBlock as BlockValue).commands;
         return {
           execute(ctx: Context): void {
+            // Evaluate the argument to handle nested commands
+            const evaluatedCondition = evaluateArgValue(ctx, condition);
+            if (evaluatedCondition.type !== ArgumentType.Number) {
+              throw new Error('IFELSE command requires a number');
+            }
+            const cond = (evaluatedCondition as NumberValue).value;
+            const commandsToExecute = (block as BlockValue).commands;
+            const elseCommandsToExecute = (elseBlock as BlockValue).commands;
             if (cond) {
-              for (const cmd of commands) {
+              for (const cmd of commandsToExecute) {
                 cmd.execute(ctx);
               }
             } else {
-              for (const cmd of elseCommands) {
+              for (const cmd of elseCommandsToExecute) {
                 cmd.execute(ctx);
               }
             }
           },
           toString(): string {
-            return `IFELSE ${cond} [ ${commands.map(cmd => cmd.toString()).join(' ')} ] [ ${elseCommands.map(cmd => cmd.toString()).join(' ')} ]`;
+            const commandsToExecute = (block as BlockValue).commands;
+            const elseCommandsToExecute = (elseBlock as BlockValue).commands;
+            return `IFELSE ${condition.toString()} [ ${commandsToExecute.map((cmd: Command) => cmd.toString()).join(' ')} ] [ ${elseCommandsToExecute.map((cmd: Command) => cmd.toString()).join(' ')} ]`;
           }
         };
       },
       category: CommandCategory.ControlStructures
-    }
+    },
+    {
+      name: 'RANDOM',
+      aliases: ['RND'],
+      description: 'Generate a random integer between 0 and the specified maximum value',
+      example: 'RANDOM 100',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (number: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            // Evaluate the argument to handle nested commands
+            const evaluatedNumber = evaluateArgValue(ctx, number);
+            if (evaluatedNumber.type !== ArgumentType.Number) {
+              throw new Error('RANDOM command requires a number');
+            }
+            const max = (evaluatedNumber as NumberValue).value;
+            const randomInt = Math.floor(Math.random() * (max + 1));
+            ctx.output(`Random value: ${randomInt}`);
+            return new NumberValue(randomInt);
+          },
+          toString(): string {
+            return `RANDOM ${number.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'WAIT',
+      aliases: ['WT'],
+      description: 'Pause for a specified duration in milliseconds',
+      example: 'WAIT 1000',
+      argumentTypes: [ArgumentType.Number],
+      createCommand: (duration: ArgValue) => {
+        return {
+          execute(ctx: Context): void {
+            // Evaluate the argument to handle nested commands
+            const evaluatedDuration = evaluateArgValue(ctx, duration);
+            if (evaluatedDuration.type !== ArgumentType.Number) {
+              throw new Error('WAIT command requires a number');
+            }
+            const ms = (evaluatedDuration as NumberValue).value;
+            
+            // Use the turtle's wait method to add to the animation queue
+            ctx.output(`Waiting for ${ms}ms...`);
+            ctx.turtle.wait?.(ms);
+          },
+          toString(): string {
+            return `WAIT ${duration.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.IOOperations
+    },
+    {
+      name: 'MAKE',
+      aliases: ['SET'],
+      description: 'Assign a value to a variable',
+      example: 'MAKE "var 100',
+      argumentTypes: [ArgumentType.String, ArgumentType.Number],
+      createCommand: (varName: ArgValue, value: ArgValue) => {
+        return {
+          execute(ctx: Context): void {
+            // Evaluate the arguments to handle nested commands
+            const evaluatedVarName = evaluateArgValue(ctx, varName);
+            const evaluatedValue = evaluateArgValue(ctx, value);
+            if (evaluatedVarName.type !== ArgumentType.String || evaluatedValue.type !== ArgumentType.Number) {
+              throw new Error('MAKE command requires a string and a number');
+            }
+            const name = (evaluatedVarName as StringValue).value;
+            ctx.setVariable(name, evaluatedValue);
+            ctx.output(`Set variable ${name} to ${evaluatedValue.toString()}`);
+          },
+          toString(): string {
+            return `MAKE "${varName.toString()} ${value.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.Variables
+    },
   ];
 
 export const commandList = LOGO_COMMANDS;
@@ -512,3 +692,79 @@ const makeMap = (commands: CommandSpec[]) => {
 };
 
 export const commandMap = makeMap(LOGO_COMMANDS);
+
+/**
+ * Evaluates an ArgValue to handle runtime values, such as executing commands inside expressions
+ */
+export function evaluateArgValue(ctx: Context, value: ArgValue): ArgValue {
+  if (value instanceof CommandValue) {
+    // If it's a wrapped command, execute it and return its result
+    const result = value.command.execute(ctx);
+    if (result === undefined) {
+      throw new Error(`Command ${value.command.toString()} did not return a value when expected to`);
+    }
+    return result;
+  } else if (value instanceof OperationValue) {
+    // Evaluate both sides of the operation
+    const leftValue = evaluateArgValue(ctx, value.left);
+    const rightValue = evaluateArgValue(ctx, value.right);
+    
+    // Ensure both values are numbers
+    if (leftValue.type !== ArgumentType.Number || rightValue.type !== ArgumentType.Number) {
+      throw new Error(`Operator ${value.operator} requires number operands, got ${ArgumentType[leftValue.type]} and ${ArgumentType[rightValue.type]}`);
+    }
+    
+    const leftNum = (leftValue as NumberValue).value;
+    const rightNum = (rightValue as NumberValue).value;
+    let result: number;
+    
+    // Perform the operation
+    switch (value.operator) {
+      case '+':
+        result = leftNum + rightNum;
+        break;
+      case '-':
+        result = leftNum - rightNum;
+        break;
+      case '*':
+        result = leftNum * rightNum;
+        break;
+      case '/':
+        if (rightNum === 0) {
+          throw new Error(`Division by zero`);
+        }
+        result = leftNum / rightNum;
+        break;
+      case '<':
+        result = leftNum < rightNum ? 1 : 0;
+        break;
+      case '>':
+        result = leftNum > rightNum ? 1 : 0;
+        break;
+      case '<=':
+        result = leftNum <= rightNum ? 1 : 0;
+        break;
+      case '>=':
+        result = leftNum >= rightNum ? 1 : 0;
+        break;
+      case '==':
+        result = leftNum === rightNum ? 1 : 0;
+        break;
+      case '!=':
+        result = leftNum !== rightNum ? 1 : 0;
+        break;
+      default:
+        throw new Error(`Unknown operator: ${value.operator}`);
+    }
+    
+    return new NumberValue(result);
+  } else if (value instanceof VariableValue) {
+    // Look up variable in the context
+    const varValue = ctx.getVariable(value.name);
+    if (varValue === undefined) {
+      throw new Error(`Undefined variable: ${value.name}`);
+    }
+    return varValue;
+  }
+  return value;
+}

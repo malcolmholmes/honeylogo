@@ -12,7 +12,10 @@ import {
   ArgumentType,
   NumberValue,
   StringValue,
-  BlockValue
+  BlockValue,
+  CommandValue,
+  OperationValue,
+  VariableValue
 } from './types';
 
 /**
@@ -115,9 +118,8 @@ function parsePrimaryExpression(tokens: Token[], start: number): [ArgValue | nul
       return [new StringValue(token.value), 1];
 
     case TokenType.VARIABLE:
-      // Placeholder for variable handling - would need variable context
-      console.warn("Variable handling not fully implemented");
-      return [new StringValue(token.value), 1]; // Temporary
+      // Create a variable reference that will be resolved at runtime
+      return [new VariableValue(token.value), 1];
     
     case TokenType.OPEN_BRACKET:
       return parseBlock(tokens, start);
@@ -141,13 +143,43 @@ function parsePrimaryExpression(tokens: Token[], start: number): [ArgValue | nul
         throw new ParserError(`Error in parenthesized expression: ${e instanceof Error ? e.message : String(e)}`);
       }
       
+    case TokenType.COMMAND:
+      // Handle command execution in expressions
+      try {
+        // Check if this command returns a value
+        const commandName = token.value.toLowerCase();
+        const commandSpec = commandMap.get(commandName);
+        
+        if (!commandSpec) {
+          throw new ParserError(`Unknown command: ${commandName}`);
+        }
+        
+        // Only allow commands that have returnTypes specified
+        if (!commandSpec.returnTypes || commandSpec.returnTypes.length === 0) {
+          throw new ParserError(`Command ${commandName} cannot be used in an expression as it does not return a value`);
+        }
+        
+        // Parse the command and its arguments
+        const [command, consumed] = parseCommand(tokens, start);
+        if (!command) {
+          throw new ParserError(`Failed to parse command ${commandName} in expression`);
+        }
+        
+        // Since the command will be evaluated during execution (not parsing),
+        // we create a special wrapper value that represents a command to execute
+        // when it's evaluated
+        return [new CommandValue(command), consumed];
+      } catch (e) {
+        throw new ParserError(`Error parsing command in expression: ${e instanceof Error ? e.message : String(e)}`);
+      }
+      
     default:
       throw new ParserError(`Unexpected token in expression: ${token.value} (type: ${TokenType[token.type]})`);
   }
 }
 
 /**
- * Parse a binary expression (e.g., 1 + 2, x * y)
+ * Parse a binary expression, like 1 + 2
  */
 function parseBinaryExpression(
   argType: ArgumentType, 
@@ -166,55 +198,17 @@ function parseBinaryExpression(
       throw new ParserError(`Failed to parse right side of operator ${operator}`);
     }
     
-    // Make sure both sides are numbers
-    if (leftValue.type !== ArgumentType.Number || rightValue.type !== ArgumentType.Number) {
+    // Make sure both sides are numbers or can be evaluated to numbers at runtime
+    if ((leftValue.type !== ArgumentType.Number && !(leftValue instanceof CommandValue)) || 
+        (rightValue.type !== ArgumentType.Number && !(rightValue instanceof CommandValue))) {
       throw new ParserError(`Operator ${operator} requires number operands, got ${ArgumentType[leftValue.type]} and ${ArgumentType[rightValue.type]}`);
     }
     
-    const leftNum = (leftValue as NumberValue).value;
-    const rightNum = (rightValue as NumberValue).value;
-    let result: number;
-    
-    // Perform the operation
-    switch (operator) {
-      case '+':
-        result = leftNum + rightNum;
-        break;
-      case '-':
-        result = leftNum - rightNum;
-        break;
-      case '*':
-        result = leftNum * rightNum;
-        break;
-      case '/':
-        if (rightNum === 0) {
-          throw new ParserError(`Division by zero`);
-        }
-        result = leftNum / rightNum;
-        break;
-      case '<':
-        result = leftNum < rightNum ? 1 : 0;
-        break;
-      case '>':
-        result = leftNum > rightNum ? 1 : 0;
-        break;
-      case '<=':
-        result = leftNum <= rightNum ? 1 : 0;
-        break;
-      case '>=':
-        result = leftNum >= rightNum ? 1 : 0;
-        break;
-      case '==':
-        result = leftNum === rightNum ? 1 : 0;
-        break;
-      case '!=':
-        result = leftNum !== rightNum ? 1 : 0;
-        break;
-      default:
-        throw new ParserError(`Unknown operator: ${operator}`);
-    }
-    
-    return [new NumberValue(result), leftConsumed + 1 + rightConsumed]; // +1 for the operator
+    // Create a command that performs the operation at runtime
+    return [
+      new OperationValue(operator, leftValue, rightValue),
+      leftConsumed + 1 + rightConsumed // +1 for the operator
+    ];
   } catch (e) {
     throw new ParserError(`Error in binary expression: ${e instanceof Error ? e.message : String(e)}`);
   }

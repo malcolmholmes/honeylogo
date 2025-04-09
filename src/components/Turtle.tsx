@@ -17,6 +17,7 @@ export interface TurtleHandle {
   setPosition?: (x: number | null, y: number | null) => void;
   setHeading?: (angle: number) => void;
   home?: () => void;
+  wait?: (duration: number) => void;
 }
 
 const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
@@ -525,6 +526,26 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
         
         // Animation complete, process next animation
         processNextAnimation();
+      },
+      
+      wait: (duration: number) => {
+        // Queue this animation
+        const animateWait = () => {
+          // Wait for the specified duration
+          setTimeout(() => {
+            // Animation complete, process next animation
+            processNextAnimation();
+          }, duration);
+        };
+        
+        // Add to animation queue
+        animationQueue.current.push(animateWait);
+        
+        // Start processing animations if not already in progress
+        if (!animationInProgress.current) {
+          animationInProgress.current = true;
+          processNextAnimation();
+        }
       },
     };
     
