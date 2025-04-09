@@ -100,6 +100,17 @@ export class Lexer {
       // Handle reserved control keywords first
       const lowerWord = word.toLowerCase();
 
+      // Check for reserved words for procedure handling
+      if (lowerWord === 'to') {
+        this.tokens.push({ type: TokenType.TO, value: 'TO' });
+        continue;
+      }
+      
+      if (lowerWord === 'end') {
+        this.tokens.push({ type: TokenType.END, value: 'END' });
+        continue;
+      }
+
       // Check if it's a defined command in our spec
       if (commandMap.has(lowerWord)) {
         const commandSpec = commandMap.get(lowerWord)!;

@@ -13,7 +13,8 @@ import {
   BlockValue,
   CommandValue,
   OperationValue,
-  VariableValue
+  VariableValue,
+  ProcedureValue
 } from './parser/types';
 
 /**
@@ -22,12 +23,14 @@ import {
 export class Context {
   turtle: TurtleHandle;
   variables: Map<string, ArgValue>;
+  procedures: Map<string, ProcedureValue>;
   lastResult: ArgValue | null;
   output: (message: string) => void;
 
   constructor(turtle: TurtleHandle, outputCallback: (message: string) => void = () => {}) {
     this.turtle = turtle;
     this.variables = new Map<string, ArgValue>();
+    this.procedures = new Map<string, ProcedureValue>();
     this.lastResult = null;
     this.output = outputCallback;
   }
@@ -40,8 +43,33 @@ export class Context {
     return this.variables.get(name.toLowerCase());
   }
   
+  setProcedure(name: string, proc: ProcedureValue): void {
+    this.procedures.set(name.toLowerCase(), proc);
+  }
+  
+  getProcedure(name: string): ProcedureValue | undefined {
+    return this.procedures.get(name.toLowerCase());
+  }
+  
   setLastResult(value: ArgValue | null): void {
     this.lastResult = value;
+  }
+  
+  // Create a new context for procedure execution with local variables
+  createProcedureContext(params: string[], args: ArgValue[]): Context {
+    const procContext = new Context(this.turtle, this.output);
+    
+    // Copy all procedures from the parent context
+    this.procedures.forEach((value, key) => {
+      procContext.procedures.set(key, value);
+    });
+    
+    // Set parameter values as local variables
+    for (let i = 0; i < Math.min(params.length, args.length); i++) {
+      procContext.setVariable(params[i], args[i]);
+    }
+    
+    return procContext;
   }
 }
 

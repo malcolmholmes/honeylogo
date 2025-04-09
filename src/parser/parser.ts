@@ -5,7 +5,9 @@ import { Token, TokenType } from './lexer';
 import { 
   Command,
   commandMap,
-  Program
+  Program,
+  Context,
+  evaluateArgValue
 } from '../spec';
 import {
   ArgValue,
@@ -15,7 +17,8 @@ import {
   BlockValue,
   CommandValue,
   OperationValue,
-  VariableValue
+  VariableValue,
+  ProcedureValue
 } from './types';
 
 /**
@@ -43,6 +46,15 @@ export function parse(source: string, tokens: Token[]): Program {
 
   while (i < tokens.length) {
     try {
+      // First, try to parse a procedure definition (TO...END)
+      const [procCommand, procConsumed] = parseProcedureDefinition(tokens, i);
+      if (procCommand) {
+        commands.push(procCommand);
+        i += procConsumed;
+        continue;
+      }
+      
+      // Then, try to parse a regular command or procedure call
       const [command, consumed] = parseCommand(tokens, i);
       if (command) {
         commands.push(command);
@@ -53,25 +65,18 @@ export function parse(source: string, tokens: Token[]): Program {
         errors.push(new ParserError(`Unexpected token: ${token.value}`));
         i++; // Skip the problematic token
       }
-    } catch (e) {
-      if (e instanceof ParserError) {
-        errors.push(e);
-      } else {
-        errors.push(new ParserError(`Error: ${e}`));
-      }
-      i++; // Skip the problematic token
+    } catch (error) {
+      console.error(error);
+      errors.push(error instanceof ParserError 
+        ? error 
+        : new ParserError(error instanceof Error ? error.message : String(error))
+      );
+      i++; // Skip the problematic token on error
     }
   }
 
-  // Create program with collected errors
   const program = new Program(commands, source);
-  
-  // If we have errors, add them to the program
-  if (errors.length > 0) {
-    program.errors = errors.map(err => err.message);
-    console.error('Parser errors:', program.errors);
-  }
-  
+  program.errors = errors.map(e => e.message);
   return program;
 }
 
@@ -329,9 +334,151 @@ function parseCommand(tokens: Token[], start: number): [Command | null, number] 
   
   // For procedure calls and other non-standard commands
   if (token.type === TokenType.PROCEDURE) {
-    // Handle procedure calls here
-    throw new ParserError(`Procedure calls not yet implemented: ${token.value}`);
+    return parseProcedureCall(tokens, start);
+  }
+  
+  if (token.type === TokenType.TO) {
+    return parseProcedureDefinition(tokens, start);
   }
   
   throw new ParserError(`Unexpected token: ${token.value} (type: ${TokenType[token.type]})`);
+}
+
+/**
+ * Parse a procedure definition (TO...END)
+ */
+function parseProcedureDefinition(tokens: Token[], start: number): [Command | null, number] {
+  if (start >= tokens.length || tokens[start].type !== TokenType.TO) {
+    return [null, 0];
+  }
+  
+  // Skip the TO token
+  let currentPos = start + 1;
+  
+  // Expect procedure name
+  if (currentPos >= tokens.length) {
+    throw new ParserError('Unexpected end of input while parsing procedure definition');
+  }
+  
+  const nameToken = tokens[currentPos++];
+  if (nameToken.type !== TokenType.COMMAND && nameToken.type !== TokenType.PROCEDURE) {
+    throw new ParserError(`Expected procedure name after TO, got ${nameToken.value}`);
+  }
+  
+  const procedureName = nameToken.value;
+  
+  // Parse parameter names (all :VARIABLE tokens before the first command)
+  const paramNames: string[] = [];
+  while (currentPos < tokens.length && tokens[currentPos].type === TokenType.VARIABLE) {
+    const paramName = tokens[currentPos].value;
+    paramNames.push(paramName);
+    currentPos++;
+  }
+  
+  // Parse the procedure body (all commands until END)
+  const procedureCommands: Command[] = [];
+  let foundEnd = false;
+  
+  while (currentPos < tokens.length) {
+    if (tokens[currentPos].type === TokenType.END) {
+      foundEnd = true;
+      currentPos++;
+      break;
+    }
+    
+    const [command, consumed] = parseCommand(tokens, currentPos);
+    if (command) {
+      procedureCommands.push(command);
+      currentPos += consumed;
+    } else {
+      // If we couldn't parse a command, skip it
+      currentPos++;
+    }
+  }
+  
+  if (!foundEnd) {
+    throw new ParserError(`Missing END for procedure ${procedureName}`);
+  }
+  
+  // Create a command that defines a procedure
+  return [
+    {
+      execute(ctx: Context): void {
+        const proc = new ProcedureValue(procedureName, paramNames, procedureCommands);
+        ctx.setProcedure(procedureName, proc);
+        ctx.output(`Defined procedure: ${procedureName}`);
+      },
+      toString(): string {
+        const paramsStr = paramNames.map(p => `:${p}`).join(' ');
+        const bodyStr = procedureCommands.map(cmd => `  ${cmd.toString()}`).join('\n');
+        return `TO ${procedureName} ${paramsStr}\n${bodyStr}\nEND`;
+      }
+    },
+    currentPos - start
+  ];
+}
+
+/**
+ * Parse a procedure call
+ */
+function parseProcedureCall(tokens: Token[], start: number): [Command | null, number] {
+  if (start >= tokens.length || tokens[start].type !== TokenType.PROCEDURE) {
+    return [null, 0];
+  }
+  
+  const procedureName = tokens[start].value;
+  let consumed = 1;
+  
+  // Parse arguments
+  const args: ArgValue[] = [];
+  while (start + consumed < tokens.length) {
+    // Try to parse an argument
+    try {
+      const [arg, argConsumed] = parseExpression(ArgumentType.Number, tokens, start + consumed);
+      if (!arg) {
+        break;
+      }
+      
+      args.push(arg);
+      consumed += argConsumed;
+    } catch (e) {
+      // If parsing fails, we've reached the end of arguments
+      break;
+    }
+  }
+  
+  // Create a command that calls the procedure
+  return [
+    {
+      execute(ctx: Context): ArgValue | void {
+        const proc = ctx.getProcedure(procedureName);
+        if (!proc) {
+          throw new Error(`Undefined procedure: ${procedureName}`);
+        }
+        
+        // Evaluate all arguments before passing them to the procedure
+        const evaluatedArgs = args.map(arg => evaluateArgValue(ctx, arg));
+        
+        // Create a new context with parameters
+        const procContext = ctx.createProcedureContext(proc.paramNames, evaluatedArgs);
+        
+        // Execute the procedure commands
+        let lastResult: ArgValue | void = undefined;
+        for (const cmd of proc.commands) {
+          const result = cmd.execute(procContext);
+          if (result !== undefined) {
+            procContext.setLastResult(result);
+            lastResult = result;
+          }
+        }
+        
+        // Return the last result from the procedure (if any)
+        return lastResult;
+      },
+      toString(): string {
+        return `${procedureName} ${args.map(arg => arg.toString()).join(' ')}`;
+      }
+    },
+    consumed
+  ];
 }

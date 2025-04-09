@@ -535,7 +535,7 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
           setTimeout(() => {
             // Animation complete, process next animation
             processNextAnimation();
-          }, duration);
+          }, duration*1000/60);
         };
         
         // Add to animation queue

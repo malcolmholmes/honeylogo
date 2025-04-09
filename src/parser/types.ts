@@ -186,3 +186,25 @@ export class VariableValue extends ArgValue {
     return `:${this.name}`; 
   }
 }
+
+/**
+ * Represents a user-defined procedure
+ */
+export class ProcedureValue extends ArgValue {
+  constructor(
+    public name: string,
+    public paramNames: string[],
+    public commands: Command[]
+  ) {
+    super();
+  }
+  
+  get type() {
+    return ArgumentType.Block; // Procedures are similar to blocks
+  }
+  
+  toString() {
+    const params = this.paramNames.map(param => `:${param}`).join(' ');
+    return `TO ${this.name} ${params}`;
+  }
+}
