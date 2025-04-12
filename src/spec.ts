@@ -306,6 +306,60 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       category: CommandCategory.TurtleGraphics
     },
     {
+      name: 'PENPAINT',
+      aliases: ['PE'],
+      description: 'Draw in the foreground colour',
+      example: 'PENPAINT',
+      argumentTypes: [],
+      createCommand: () => {
+        return {
+          execute(ctx: Context): void {
+            ctx.turtle.penPaint();
+          },
+          toString(): string {
+            return "PENPAINT";
+          }
+        };
+      },
+      category: CommandCategory.TurtleGraphics
+    },
+    {
+      name: 'PENERASE',
+      aliases: ['PE'],
+      description: 'Draw in the background colour',
+      example: 'PENERASE',
+      argumentTypes: [],
+      createCommand: () => {
+        return {
+          execute(ctx: Context): void {
+            ctx.turtle.penErase();
+          },
+          toString(): string {
+            return "PENERASE";
+          }
+        };
+      },
+      category: CommandCategory.TurtleGraphics
+    },
+    {
+      name: 'PENREVERSE',
+      aliases: ['PE'],
+      description: 'Invert the background colour',
+      example: 'PENREVERSE',
+      argumentTypes: [],
+      createCommand: () => {
+        return {
+          execute(ctx: Context): void {
+            ctx.turtle.penReverse();
+          },
+          toString(): string {
+            return "PENREVERSE";
+          }
+        };
+      },
+      category: CommandCategory.TurtleGraphics
+    },
+    {
       name: 'HIDETURTLE',
       aliases: ['HT'],
       description: 'Hide the turtle',
@@ -489,6 +543,32 @@ export const LOGO_COMMANDS: CommandSpec[] = [
             // Convert to CSS color format
             //const cssColor = `rgb(${color}, 0, 0)`;
             ctx.turtle.setColor(color);
+          },
+          toString(): string {
+            return `SETCOLOR ${colorValue.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.Graphics
+    },
+    {
+      name: 'SETBACKGROUND',
+      aliases: ['SETSCREENCOLOR', 'SETSCREENCOLOUR', 'SETBG', 'SETSC'],
+      description: 'Set the background color',
+      example: 'SETBACKGROUND "red"',
+      argumentTypes: [ArgumentType.String],
+      createCommand: (colorValue: ArgValue) => {
+        return {
+          execute(ctx: Context): void {
+            // Evaluate the argument to handle nested commands
+            const evaluatedColor = evaluateArgValue(ctx, colorValue);
+            if (evaluatedColor.type !== ArgumentType.String) {
+              throw new Error('SETCOLOR command requires a string');
+            }
+            const color = (evaluatedColor as StringValue).value;
+            // Convert to CSS color format
+            //const cssColor = `rgb(${color}, 0, 0)`;
+            ctx.turtle.setBackgroundColor(color);
           },
           toString(): string {
             return `SETCOLOR ${colorValue.toString()}`;

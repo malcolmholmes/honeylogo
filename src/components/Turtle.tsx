@@ -8,7 +8,11 @@ export interface TurtleHandle {
   left: (angle: number) => void;
   penUp: () => void;
   penDown: () => void;
+  penPaint: () => void;
+  penErase: () => void;
+  penReverse: () => void;
   setColor: (color: string) => void;
+  setBackgroundColor: (color: string) => void;
   clear: () => void;
   setAnimationSpeed: (speed: number) => void;
   hideTurtle: () => void;
@@ -20,6 +24,12 @@ export interface TurtleHandle {
   wait?: (duration: number) => void;
 }
 
+enum PenMode {
+  Paint = 'paint',
+  Erase = 'erase',
+  Reverse = 'reverse'
+}
+
 const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -28,7 +38,9 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
   const position = useRef({ x: 0, y: 0 });
   const angle = useRef(-90); // Start pointing upwards (-90 degrees)
   const isPenDown = useRef(true);
+  const penMode = useRef(PenMode.Paint);
   const color = useRef('#000000');
+  const backgroundColor = useRef('#ffffff');
   const turtleSize = useRef(15); // Size of the turtle sprite
   const backgroundImageData = useRef<ImageData | null>(null);
   const lastTurtlePosition = useRef({ x: 0, y: 0 });
@@ -196,13 +208,24 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
             // Draw the line segment if pen is down
             if (isPenDown.current) {
               ctx.beginPath();
-              ctx.strokeStyle = color.current;
-              console.log("WRITING IN COLOR", color.current);
+              if (penMode.current === PenMode.Paint) {
+                ctx.globalCompositeOperation = 'source-over'; // Normal drawing mode
+                ctx.strokeStyle = color.current;
+              } else if (penMode.current === PenMode.Erase) {
+                ctx.globalCompositeOperation = 'source-over'; // Normal drawing mode
+                ctx.strokeStyle = backgroundColor.current;
+              } else if (penMode.current === PenMode.Reverse) {
+                // Use 'xor' composite operation to invert pixels
+                ctx.globalCompositeOperation = 'xor';
+                ctx.strokeStyle = '#FFFFFF'; // White for best inversion effect
+              }
               ctx.lineWidth = penSize.current;
               // For smooth continuous lines, only draw from the last position to new position
               ctx.moveTo(position.current.x, position.current.y);
               ctx.lineTo(newX, newY);
               ctx.stroke();
+              // Reset composite operation back to normal
+              ctx.globalCompositeOperation = 'source-over';
             }
             
             // Update position
@@ -271,9 +294,56 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
         });
       },
       
+      penPaint: () => {
+        animate(() => {
+          penMode.current = PenMode.Paint;
+          processNextAnimation();
+        });
+      },
+      
+      penErase: () => {
+        animate(() => {
+          penMode.current = PenMode.Erase;
+          processNextAnimation();
+        });
+      },
+      
+      penReverse: () => {
+        animate(() => {
+          penMode.current = PenMode.Reverse;
+          processNextAnimation();
+        });
+      },
+      
       setColor: (newColor: string) => {
         animate(() => {
           color.current = newColor;
+          
+          // Animation complete, process next animation
+          processNextAnimation();
+        });
+      },
+      
+      setBackgroundColor: (newColor: string) => {
+        animate(() => {
+          backgroundColor.current = newColor;
+          
+          // Get the canvas and context
+          const canvas = canvasRef.current;
+          const ctx = contextRef.current;
+          if (!canvas || !ctx) return;
+          
+          // Save current state
+          eraseTurtle();
+          ctx.save();
+          
+          // Clear and fill with new background color
+          ctx.fillStyle = newColor;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Restore and redraw turtle
+          ctx.restore();
+          drawTurtle();
           
           // Animation complete, process next animation
           processNextAnimation();
@@ -286,8 +356,10 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
           const ctx = contextRef.current;
           if (!canvas || !ctx) return;
           
-          // Clear the canvas
+          // Clear the canvas and fill with current background color
           ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = backgroundColor.current;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
           
           // Reset turtle position
           position.current = { x: canvas.width / 2, y: canvas.height / 2 };
@@ -435,12 +507,24 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
             // Draw the line segment if pen is down
             if (isPenDown.current) {
               ctx.beginPath();
-              ctx.strokeStyle = color.current;
+              if (penMode.current === PenMode.Paint) {
+                ctx.globalCompositeOperation = 'source-over'; // Normal drawing mode
+                ctx.strokeStyle = color.current;
+              } else if (penMode.current === PenMode.Erase) {
+                ctx.globalCompositeOperation = 'source-over'; // Normal drawing mode
+                ctx.strokeStyle = backgroundColor.current;
+              } else if (penMode.current === PenMode.Reverse) {
+                // Use 'xor' composite operation to invert pixels
+                ctx.globalCompositeOperation = 'xor';
+                ctx.strokeStyle = '#FFFFFF'; // White for best inversion effect
+              }
               ctx.lineWidth = penSize.current;
               // For smooth continuous lines, only draw from the last position to new position
               ctx.moveTo(position.current.x, position.current.y);
               ctx.lineTo(newX, newY);
               ctx.stroke();
+              // Reset composite operation back to normal
+              ctx.globalCompositeOperation = 'source-over';
             }
             
             // Update position
