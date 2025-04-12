@@ -8,6 +8,7 @@ import CodeEditor from './components/CodeEditor'
 import OutputPanel from './components/OutputPanel'
 import SpeedSlider from './components/SpeedSlider'
 import Docs from './components/Docs'
+import ProgramManager from './components/ProgramManager'
 import { parse } from './parser/parser'
 import { Lexer } from './parser/lexer'
 import { Context, Program } from './spec'
@@ -104,17 +105,32 @@ function App() {
     setIsDocsOpen(!isDocsOpen);
   }
 
+  // Handle load program from ProgramManager
+  const handleLoadProgram = (programCode: string) => {
+    setCode(programCode);
+    setOutput('Program loaded successfully.');
+  }
+
   return (
     <div className="container-fluid p-0">
-      <header className="bg-dark text-white p-3">
-        <h1>HoneyLogo</h1>
-        <button 
-          className="help-icon" 
-          onClick={toggleDocs}
-          aria-label="Help"
-        >
-          ?
-        </button>
+      <header className="bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+        <h1 className="mb-0">HoneyLogo</h1>
+        <div className="d-flex align-items-center">
+          <div className="me-3">
+            <ProgramManager 
+              currentCode={code}
+              onLoadProgram={handleLoadProgram}
+            />
+          </div>
+          <button 
+            className="help-icon" 
+            onClick={toggleDocs}
+            aria-label="Help"
+            style={{ position: 'relative', zIndex: 1 }}
+          >
+            ?
+          </button>
+        </div>
       </header>
       
       <div className="row g-0 main-content">
