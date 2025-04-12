@@ -114,6 +114,34 @@ function parsePrimaryExpression(tokens: Token[], start: number): [ArgValue | nul
 
   const token = tokens[start];
 
+  // Handle unary operators (especially minus)
+  if (token.type === TokenType.OPERATOR && (token.value === '-' || token.value === '+')) {
+    // Get the operand that follows the unary operator
+    const [operand, consumed] = parsePrimaryExpression(tokens, start + 1);
+    
+    if (!operand) {
+      throw new ParserError(`Expected expression after ${token.value} operator`);
+    }
+    
+    // For unary minus, negate the value if it's a number
+    if (token.value === '-') {
+      if (operand instanceof NumberValue) {
+        // Create a new number with the negated value
+        return [new NumberValue(-operand.value), consumed + 1];
+      } else {
+        // For other types, create an operation with appropriate handling at runtime
+        return [new OperationValue(
+          token.value, 
+          new NumberValue(0), 
+          operand
+        ), consumed + 1];
+      }
+    }
+    
+    // For unary plus, just return the operand as it is
+    return [operand, consumed + 1];
+  }
+
   // Handle different token types
   switch (token.type) {
     case TokenType.NUMBER:

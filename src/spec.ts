@@ -307,7 +307,7 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     },
     {
       name: 'PENPAINT',
-      aliases: ['PE'],
+      aliases: ['PPT'],
       description: 'Draw in the foreground colour',
       example: 'PENPAINT',
       argumentTypes: [],
@@ -343,7 +343,7 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     },
     {
       name: 'PENREVERSE',
-      aliases: ['PE'],
+      aliases: ['PX'],
       description: 'Invert the background colour',
       example: 'PENREVERSE',
       argumentTypes: [],

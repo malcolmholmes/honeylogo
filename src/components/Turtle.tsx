@@ -367,6 +367,10 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
           isPenDown.current = true;
           isTurtleVisible.current = true;
           penSize.current = 2;
+          penMode.current = PenMode.Paint;
+          color.current = '#000000';
+          backgroundColor.current = '#ffffff';
+         
           
           // Redraw the turtle
           drawTurtle();
