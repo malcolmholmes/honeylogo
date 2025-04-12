@@ -472,10 +472,10 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       category: CommandCategory.TurtleGraphics
     },
     {
-      name: 'SETCOLOR',
-      aliases: ['SC'],
+      name: 'SETPENCOLOR',
+      aliases: ['SPC', 'SETPENCOLOUR'],
       description: 'Set the pen color',
-      example: 'SETCOLOR "red"',
+      example: 'SETPENCOLOR "red"',
       argumentTypes: [ArgumentType.String],
       createCommand: (colorValue: ArgValue) => {
         return {
@@ -487,8 +487,8 @@ export const LOGO_COMMANDS: CommandSpec[] = [
             }
             const color = (evaluatedColor as StringValue).value;
             // Convert to CSS color format
-            const cssColor = `rgb(${color}, 0, 0)`;
-            ctx.turtle.setColor(cssColor);
+            //const cssColor = `rgb(${color}, 0, 0)`;
+            ctx.turtle.setColor(color);
           },
           toString(): string {
             return `SETCOLOR ${colorValue.toString()}`;
