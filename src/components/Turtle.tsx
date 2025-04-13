@@ -22,6 +22,7 @@ export interface TurtleHandle {
   setHeading?: (angle: number) => void;
   home?: () => void;
   wait?: (duration: number) => void;
+  fill?: () => void;
 }
 
 enum PenMode {
@@ -585,8 +586,141 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
           processNextAnimation();
         }
       },
+      fill: () => {
+        animate(() => {
+          const ctx = contextRef.current;
+          const canvas = canvasRef.current;
+          if (!ctx || !canvas) return;
+          
+          // Get current position and colors
+          const x = Math.round(position.current.x);
+          const y = Math.round(position.current.y);
+          
+          // Determine fill color based on current pen mode
+          let fillColor: string | 'xor';
+          if (penMode.current === PenMode.Paint) {
+            fillColor = color.current;
+          } else if (penMode.current === PenMode.Erase) {
+            fillColor = backgroundColor.current;
+          } else {
+            // For reverse mode, we'll handle differently during the fill process
+            fillColor = 'xor';
+          }
+          
+          // Save the current turtle position before we erase it
+          eraseTurtle();
+          
+          // Get the target color (color at the current position)
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          
+          // Get the color at the starting pixel
+          const index = (y * canvas.width + x) * 4;
+          const targetR = data[index];
+          const targetG = data[index + 1];
+          const targetB = data[index + 2];
+          const targetA = data[index + 3];
+          
+          // Convert fillColor to RGBA
+          let fillR: number, fillG: number, fillB: number, fillA: number;
+          if (fillColor === 'xor') {
+            // For XOR, we'll invert colors during the fill process
+            fillR = fillG = fillB = 0; // Not used directly
+            fillA = 255;
+          } else {
+            // Create temporary canvas to extract RGB values from color string
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            if (!tempCtx) return;
+            
+            tempCtx.fillStyle = fillColor;
+            tempCtx.fillRect(0, 0, 1, 1);
+            const colorData = tempCtx.getImageData(0, 0, 1, 1).data;
+            
+            fillR = colorData[0];
+            fillG = colorData[1];
+            fillB = colorData[2];
+            fillA = colorData[3];
+          }
+          
+          // Flood fill algorithm using 4-way connectivity
+          const stack: [number, number][] = [[x, y]];
+          const width = canvas.width;
+          const height = canvas.height;
+          
+          // Early exit if target color is same as fill color
+          if (fillColor !== 'xor' && 
+              targetR === fillR && 
+              targetG === fillG && 
+              targetB === fillB && 
+              targetA === fillA) {
+            // Redraw the turtle and exit
+            drawTurtle();
+            processNextAnimation();
+            return;
+          }
+
+          // Helper to check if a pixel matches the target color
+          const matchesTarget = (i: number): boolean => {
+            return data[i] === targetR && 
+                   data[i + 1] === targetG && 
+                   data[i + 2] === targetB && 
+                   data[i + 3] === targetA;
+          };
+          
+          // Helper to set a pixel to the fill color
+          const setFillColor = (i: number): void => {
+            if (fillColor === 'xor') {
+              // Invert the pixel colors for XOR mode
+              data[i] = 255 - data[i];
+              data[i + 1] = 255 - data[i + 1];
+              data[i + 2] = 255 - data[i + 2];
+              // Keep alpha unchanged
+            } else {
+              data[i] = fillR;
+              data[i + 1] = fillG;
+              data[i + 2] = fillB;
+              data[i + 3] = fillA;
+            }
+          };
+          
+          // Main flood fill loop
+          while (stack.length > 0) {
+            const [curX, curY] = stack.pop()!;
+            
+            // Skip if outside canvas bounds
+            if (curX < 0 || curX >= width || curY < 0 || curY >= height) {
+              continue;
+            }
+            
+            const pixelIndex = (curY * width + curX) * 4;
+            
+            // Skip if already processed or not matching target
+            if (!matchesTarget(pixelIndex)) {
+              continue;
+            }
+            
+            // Set to fill color
+            setFillColor(pixelIndex);
+            
+            // Add neighboring pixels
+            stack.push([curX + 1, curY]); // right
+            stack.push([curX - 1, curY]); // left
+            stack.push([curX, curY + 1]); // down
+            stack.push([curX, curY - 1]); // up
+          }
+          
+          // Update canvas with filled data
+          ctx.putImageData(imageData, 0, 0);
+          
+          // Redraw the turtle
+          drawTurtle();
+          
+          // Animation complete, process next animation
+          processNextAnimation();
+        });
+      },
     };
-    
     return turtleInterface;
   });
 

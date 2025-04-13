@@ -776,6 +776,24 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       },
       category: CommandCategory.Variables
     },
+    {
+      name: 'FILL',
+      aliases: ['FLOODFILL'],
+      description: 'Fill area with current pen color',
+      example: 'FILL',
+      argumentTypes: [],
+      createCommand: () => {
+        return {
+          execute(ctx: Context): void {
+            ctx.turtle.fill?.();
+          },
+          toString(): string {
+            return "FILL";
+          }
+        };
+      },
+      category: CommandCategory.TurtleGraphics
+    },
   ];
 
 export const commandList = LOGO_COMMANDS;
