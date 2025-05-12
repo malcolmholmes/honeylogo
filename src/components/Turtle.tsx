@@ -556,15 +556,22 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
       },
       
       setHeading: (heading: number) => {
-        // Erase the turtle from its previous position
-        eraseTurtle();
-        angle.current = heading - 90;
+        const animateSetHeading = () => {
+          // Erase the turtle from its previous position
+          eraseTurtle();
+          angle.current = heading - 90;
+
+          // Redraw turtle at new angle
+          drawTurtle();
+        };
+        // Add to animation queue
+        animationQueue.current.push(animateSetHeading);
         
-        // Redraw turtle at new angle
-        drawTurtle();
-        
-        // Animation complete, process next animation
-        processNextAnimation();
+        // Start processing animations if not already in progress
+        if (!animationInProgress.current) {
+          animationInProgress.current = true;
+          processNextAnimation();
+        }
       },
       
       wait: (duration: number) => {
