@@ -213,8 +213,8 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
                 ctx.globalCompositeOperation = 'source-over'; // Normal drawing mode
                 ctx.strokeStyle = color.current;
               } else if (penMode.current === PenMode.Erase) {
-                ctx.globalCompositeOperation = 'source-over'; // Normal drawing mode
-                ctx.strokeStyle = backgroundColor.current;
+                ctx.globalCompositeOperation = 'destination-out'; // Eraser mode that removes pixels
+                ctx.strokeStyle = 'rgba(0,0,0,1)'; // The color doesn't matter for destination-out
               } else if (penMode.current === PenMode.Reverse) {
                 // Use 'xor' composite operation to invert pixels
                 ctx.globalCompositeOperation = 'xor';
