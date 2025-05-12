@@ -563,6 +563,7 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
 
           // Redraw turtle at new angle
           drawTurtle();
+          processNextAnimation();
         };
         // Add to animation queue
         animationQueue.current.push(animateSetHeading);
