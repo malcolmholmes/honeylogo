@@ -9,16 +9,17 @@ import {
   Context,
   evaluateArgValue
 } from '../spec';
-import {
-  ArgValue,
-  ArgumentType,
-  NumberValue,
-  StringValue,
-  BlockValue,
+import { 
+  ArgValue, 
+  NumberValue, 
+  StringValue, 
+  VariableValue, 
   CommandValue,
   OperationValue,
-  VariableValue,
-  ProcedureValue
+  BlockValue,
+  ProcedureValue,
+  ListValue,
+  ArgumentType
 } from './types';
 
 /**
@@ -155,7 +156,9 @@ function parsePrimaryExpression(tokens: Token[], start: number): [ArgValue | nul
       return [new VariableValue(token.value), 1];
     
     case TokenType.OPEN_BRACKET:
-      return parseBlock(tokens, start);
+      // Determine if this is a list literal or a code block
+      // In the context of expressions, treat it as a list literal
+      return parseList(tokens, start);
     
     case TokenType.OPEN_PARENTHESIS:
       // Handle parenthesized expressions
@@ -248,6 +251,43 @@ function parseBinaryExpression(
 }
 
 /**
+ * Parse a list literal [item1 item2 ...]
+ */
+function parseList(tokens: Token[], start: number): [ListValue | null, number] {
+  // Check for opening bracket
+  if (tokens[start].type !== TokenType.OPEN_BRACKET) {
+    throw new ParserError(`Expected opening bracket for list, got ${tokens[start].value}`);
+  }
+  
+  const items: ArgValue[] = [];
+  let i = start + 1; // Skip opening bracket
+  
+  // Parse items until closing bracket
+  while (i < tokens.length && tokens[i].type !== TokenType.CLOSE_BRACKET) {
+    try {
+      // Parse each item as a primary expression
+      const [item, consumed] = parsePrimaryExpression(tokens, i);
+      if (item) {
+        items.push(item);
+        i += consumed;
+      } else {
+        throw new ParserError(`Invalid item in list: ${tokens[i].value}`);
+      }
+    } catch (e) {
+      throw new ParserError(`Error in list: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  
+  // Check if we found a closing bracket
+  if (i >= tokens.length || tokens[i].type !== TokenType.CLOSE_BRACKET) {
+    throw new ParserError(`Missing closing bracket for list`);
+  }
+  
+  // Include the closing bracket in the consumed count
+  return [new ListValue(items), i - start + 1]; // +1 to include the closing bracket
+}
+
+/**
  * Parse a block of commands enclosed in brackets
  */
 function parseBlock(tokens: Token[], start: number): [BlockValue | null, number] {
@@ -314,7 +354,7 @@ function parseCommand(tokens: Token[], start: number): [Command | null, number] 
       let arg: ArgValue | null;
       let argConsumed: number;
       
-      // Special handling for block arguments
+      // Special handling for block and list arguments
       if (argType === ArgumentType.Block) {
         // If this argument is a block, use parseBlock directly
         const blockStart = start + consumed;
@@ -333,8 +373,31 @@ function parseCommand(tokens: Token[], start: number): [Command | null, number] 
         
         arg = blockArg;
         argConsumed = blockConsumed;
+      } else if (argType === ArgumentType.List) {
+        // If this argument is a list, use parseList directly
+        const listStart = start + consumed;
+        if (listStart >= tokens.length) {
+          throw new ParserError(`Missing list for ${commandName}`);
+        }
+        
+        // For list arguments, check if we have an open bracket
+        if (tokens[listStart].type === TokenType.OPEN_BRACKET) {
+          const [listArg, listConsumed] = parseList(tokens, listStart);
+          if (!listArg) {
+            throw new ParserError(`Failed to parse list for ${commandName}`);
+          }
+          
+          arg = listArg;
+          argConsumed = listConsumed;
+        } else {
+          // If not a literal list, it might be a variable or expression that returns a list
+          [arg, argConsumed] = parseExpression(argType, tokens, start + consumed);
+          if (!arg) {
+            throw new ParserError(`Failed to parse list argument for ${commandName}`);
+          }
+        }
       } else {
-        // For non-block arguments, use parseExpression
+        // For other arguments, use parseExpression
         [arg, argConsumed] = parseExpression(argType, tokens, start + consumed);
         
         if (!arg) {
@@ -343,7 +406,8 @@ function parseCommand(tokens: Token[], start: number): [Command | null, number] 
       }
       
       // Check if argument type matches expected type (except for blocks which we handled above)
-      if (argType !== ArgumentType.Block && arg.type !== argType) {
+      // ArgumentType.Any is a special case that accepts any type
+      if (argType !== ArgumentType.Block && argType !== ArgumentType.Any && arg.type !== argType) {
         throw new ParserError(`Type mismatch for ${commandName}: expected ${ArgumentType[argType]}, got ${ArgumentType[arg.type]}`);
       }
       

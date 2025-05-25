@@ -55,7 +55,7 @@ function App() {
       // Create execution context and execute the program
       const context = new Context(
         turtleRef.current, 
-        (message) => setOutput(prev => `${message}\n${prev}`)
+        (message) => setOutput(prev => `${prev ? prev + '\n' : ''}${message}`)
       );
       
       // Start executing commands with delay
@@ -69,7 +69,10 @@ function App() {
   // Execute commands one by one with delay
   const executeWithDelay = (program: Program, context: Context, index: number) => {
     if (index >= program.commands.length) {
-      setOutput(prev => `Program executed successfully.\n${prev.split('\n').slice(1).join('\n')}`);
+      // Add completion message only if there's no output yet
+      if (!context.hasOutput) {
+        setOutput(prev => `${prev ? prev + '\n' : ''}Program executed successfully.`);
+      }
       return;
     }
     

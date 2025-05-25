@@ -14,7 +14,9 @@ import {
   CommandValue,
   OperationValue,
   VariableValue,
-  ProcedureValue
+  ProcedureValue,
+  ListValue,
+  BooleanValue
 } from './parser/types';
 
 /**
@@ -26,13 +28,19 @@ export class Context {
   procedures: Map<string, ProcedureValue>;
   lastResult: ArgValue | null;
   output: (message: string) => void;
+  hasOutput: boolean;
 
   constructor(turtle: TurtleHandle, outputCallback: (message: string) => void = () => {}) {
     this.turtle = turtle;
     this.variables = new Map<string, ArgValue>();
     this.procedures = new Map<string, ProcedureValue>();
     this.lastResult = null;
-    this.output = outputCallback;
+    this.hasOutput = false;
+    // Wrap the output callback to track if output has been generated
+    this.output = (message: string) => {
+      this.hasOutput = true;
+      outputCallback(message);
+    };
   }
   
   setVariable(name: string, value: ArgValue): void {
@@ -164,6 +172,7 @@ export enum CommandCategory {
   TurtleGraphics = 'Turtle Graphics',
   Graphics = 'Graphics',
   ListProcessing = 'List Processing',
+  TextProcessing = 'Text Processing',
   ControlStructures = 'Control Structures',
   Variables = 'Variables',
   IOOperations = 'Input/Output Operations',
@@ -794,6 +803,845 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       },
       category: CommandCategory.TurtleGraphics
     },
+        // List Processing Functions
+        {
+          name: 'WORD',
+          aliases: [],
+          description: 'Joins two or more inputs (words, numbers) to create a single word',
+          example: 'WORD "HELLO "WORLD',
+          argumentTypes: [ArgumentType.Any, ArgumentType.Any],
+          returnTypes: [ArgumentType.String],
+          createCommand: (word1: ArgValue, word2: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedWord1 = evaluateArgValue(ctx, word1);
+                const evaluatedWord2 = evaluateArgValue(ctx, word2);
+                
+                // Convert both values to strings (without quotes for string values)
+                let str1 = evaluatedWord1.type === ArgumentType.String 
+                  ? (evaluatedWord1 as StringValue).value 
+                  : evaluatedWord1.toString();
+                
+                let str2 = evaluatedWord2.type === ArgumentType.String 
+                  ? (evaluatedWord2 as StringValue).value 
+                  : evaluatedWord2.toString();
+                  
+                // Remove quotes from representation in toString if present
+                if (str1.startsWith('"')) str1 = str1.substring(1);
+                if (str2.startsWith('"')) str2 = str2.substring(1);
+                
+                return new StringValue(str1 + str2);
+              },
+              toString(): string {
+                return `WORD ${word1.toString()} ${word2.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.TextProcessing
+        },
+        {
+          name: 'LIST',
+          aliases: [],
+          description: 'Creates a list containing the given items',
+          example: 'LIST "apple "orange',
+          argumentTypes: [ArgumentType.Any, ArgumentType.Any],
+          returnTypes: [ArgumentType.List],
+          createCommand: (item1: ArgValue, item2: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedItem1 = evaluateArgValue(ctx, item1);
+                const evaluatedItem2 = evaluateArgValue(ctx, item2);
+                
+                return new ListValue([evaluatedItem1, evaluatedItem2]);
+              },
+              toString(): string {
+                return `LIST ${item1.toString()} ${item2.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'SENTENCE',
+          aliases: ['SE'],
+          description: 'Creates a list by combining items. If an input is a list, its items are used rather than the list itself',
+          example: 'SENTENCE "apple [orange banana]',
+          argumentTypes: [ArgumentType.Any, ArgumentType.Any],
+          returnTypes: [ArgumentType.List],
+          createCommand: (thing1: ArgValue, thing2: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing1 = evaluateArgValue(ctx, thing1);
+                const evaluatedThing2 = evaluateArgValue(ctx, thing2);
+                
+                const result: ArgValue[] = [];
+                
+                // Handle thing1
+                if (evaluatedThing1.type === ArgumentType.List) {
+                  result.push(...(evaluatedThing1 as ListValue).items);
+                } else {
+                  result.push(evaluatedThing1);
+                }
+                
+                // Handle thing2
+                if (evaluatedThing2.type === ArgumentType.List) {
+                  result.push(...(evaluatedThing2 as ListValue).items);
+                } else {
+                  result.push(evaluatedThing2);
+                }
+                
+                return new ListValue(result);
+              },
+              toString(): string {
+                return `SENTENCE ${thing1.toString()} ${thing2.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'FIRST',
+          aliases: [],
+          description: 'Returns the first item of a list or the first character of a word',
+          example: 'FIRST [a b c]',
+          argumentTypes: [ArgumentType.Any],
+          returnTypes: [ArgumentType.Any],
+          createCommand: (thing: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                
+                if (evaluatedThing.type === ArgumentType.List) {
+                  const list = evaluatedThing as ListValue;
+                  if (list.items.length === 0) {
+                    throw new Error('Cannot take FIRST of an empty list');
+                  }
+                  return list.items[0];
+                } else if (evaluatedThing.type === ArgumentType.String) {
+                  const str = (evaluatedThing as StringValue).value;
+                  if (str.length === 0) {
+                    throw new Error('Cannot take FIRST of an empty word');
+                  }
+                  return new StringValue(str.charAt(0));
+                }
+                
+                throw new Error('FIRST requires a list or word');
+              },
+              toString(): string {
+                return `FIRST ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'LAST',
+          aliases: [],
+          description: 'Returns the last item of a list or the last character of a word',
+          example: 'LAST [a b c]',
+          argumentTypes: [ArgumentType.Any],
+          returnTypes: [ArgumentType.Any],
+          createCommand: (thing: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                
+                if (evaluatedThing.type === ArgumentType.List) {
+                  const list = evaluatedThing as ListValue;
+                  if (list.items.length === 0) {
+                    throw new Error('Cannot take LAST of an empty list');
+                  }
+                  return list.items[list.items.length - 1];
+                } else if (evaluatedThing.type === ArgumentType.String) {
+                  const str = (evaluatedThing as StringValue).value;
+                  if (str.length === 0) {
+                    throw new Error('Cannot take LAST of an empty word');
+                  }
+                  return new StringValue(str.charAt(str.length - 1));
+                }
+                
+                throw new Error('LAST requires a list or word');
+              },
+              toString(): string {
+                return `LAST ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'BUTFIRST',
+          aliases: ['BF'],
+          description: 'Returns a list containing all but the first item of the input list, or a word containing all but the first character',
+          example: 'BUTFIRST [a b c]',
+          argumentTypes: [ArgumentType.Any],
+          returnTypes: [ArgumentType.Any],
+          createCommand: (thing: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                
+                if (evaluatedThing.type === ArgumentType.List) {
+                  const list = evaluatedThing as ListValue;
+                  if (list.items.length === 0) {
+                    throw new Error('Cannot take BUTFIRST of an empty list');
+                  }
+                  return new ListValue(list.items.slice(1));
+                } else if (evaluatedThing.type === ArgumentType.String) {
+                  const str = (evaluatedThing as StringValue).value;
+                  if (str.length === 0) {
+                    throw new Error('Cannot take BUTFIRST of an empty word');
+                  }
+                  return new StringValue(str.substring(1));
+                }
+                
+                throw new Error('BUTFIRST requires a list or word');
+              },
+              toString(): string {
+                return `BUTFIRST ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'BUTLAST',
+          aliases: ['BL'],
+          description: 'Returns a list containing all but the last item of the input list, or a word containing all but the last character',
+          example: 'BUTLAST [a b c]',
+          argumentTypes: [ArgumentType.Any],
+          returnTypes: [ArgumentType.Any],
+          createCommand: (thing: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                
+                if (evaluatedThing.type === ArgumentType.List) {
+                  const list = evaluatedThing as ListValue;
+                  if (list.items.length === 0) {
+                    throw new Error('Cannot take BUTLAST of an empty list');
+                  }
+                  return new ListValue(list.items.slice(0, -1));
+                } else if (evaluatedThing.type === ArgumentType.String) {
+                  const str = (evaluatedThing as StringValue).value;
+                  if (str.length === 0) {
+                    throw new Error('Cannot take BUTLAST of an empty word');
+                  }
+                  return new StringValue(str.substring(0, str.length - 1));
+                }
+                
+                throw new Error('BUTLAST requires a list or word');
+              },
+              toString(): string {
+                return `BUTLAST ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'ITEM',
+          aliases: [],
+          description: 'Returns the item at the specified index (1-based) in a list or word',
+          example: 'ITEM 2 [a b c]',
+          argumentTypes: [ArgumentType.Number, ArgumentType.Any],
+          returnTypes: [ArgumentType.Any],
+          createCommand: (index: ArgValue, thing: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedIndex = evaluateArgValue(ctx, index);
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                
+                if (evaluatedIndex.type !== ArgumentType.Number) {
+                  throw new Error('ITEM requires a number as the first argument');
+                }
+                
+                const idx = Math.floor((evaluatedIndex as NumberValue).value);
+                
+                // Logo uses 1-based indexing
+                if (idx < 1) {
+                  throw new Error('ITEM index must be greater than or equal to 1');
+                }
+                
+                if (evaluatedThing.type === ArgumentType.List) {
+                  const list = evaluatedThing as ListValue;
+                  if (idx > list.items.length) {
+                    throw new Error(`ITEM index ${idx} out of bounds for list of length ${list.items.length}`);
+                  }
+                  return list.items[idx - 1];
+                } else if (evaluatedThing.type === ArgumentType.String) {
+                  const str = (evaluatedThing as StringValue).value;
+                  if (idx > str.length) {
+                    throw new Error(`ITEM index ${idx} out of bounds for word of length ${str.length}`);
+                  }
+                  return new StringValue(str.charAt(idx - 1));
+                }
+                
+                throw new Error('ITEM requires a list or word as the second argument');
+              },
+              toString(): string {
+                return `ITEM ${index.toString()} ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'COUNT',
+          aliases: [],
+          description: 'Returns the number of items in a list or the number of characters in a word',
+          example: 'COUNT [a b c]',
+          argumentTypes: [ArgumentType.Any],
+          returnTypes: [ArgumentType.Number],
+          createCommand: (thing: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                
+                if (evaluatedThing.type === ArgumentType.List) {
+                  return new NumberValue((evaluatedThing as ListValue).items.length);
+                } else if (evaluatedThing.type === ArgumentType.String) {
+                  return new NumberValue((evaluatedThing as StringValue).value.length);
+                }
+                
+                throw new Error('COUNT requires a list or word');
+              },
+              toString(): string {
+                return `COUNT ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'FPUT',
+          aliases: [],
+          description: 'Adds an item to the front of a list and returns the new list',
+          example: 'FPUT "apple [orange banana]',
+          argumentTypes: [ArgumentType.Any, ArgumentType.List],
+          returnTypes: [ArgumentType.List],
+          createCommand: (thing: ArgValue, list: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                const evaluatedList = evaluateArgValue(ctx, list);
+                
+                if (evaluatedList.type !== ArgumentType.List) {
+                  throw new Error('FPUT requires a list as the second argument');
+                }
+                
+                const listItems = [...(evaluatedList as ListValue).items];
+                listItems.unshift(evaluatedThing);
+                
+                return new ListValue(listItems);
+              },
+              toString(): string {
+                return `FPUT ${thing.toString()} ${list.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'LPUT',
+          aliases: [],
+          description: 'Adds an item to the end of a list and returns the new list',
+          example: 'LPUT "banana [apple orange]',
+          argumentTypes: [ArgumentType.Any, ArgumentType.List],
+          returnTypes: [ArgumentType.List],
+          createCommand: (thing: ArgValue, list: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                const evaluatedList = evaluateArgValue(ctx, list);
+                
+                if (evaluatedList.type !== ArgumentType.List) {
+                  throw new Error('LPUT requires a list as the second argument');
+                }
+                
+                const listItems = [...(evaluatedList as ListValue).items];
+                listItems.push(evaluatedThing);
+                
+                return new ListValue(listItems);
+              },
+              toString(): string {
+                return `LPUT ${thing.toString()} ${list.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'PRINT',
+          aliases: ['PR'],
+          description: 'Outputs the given value to the console, followed by a newline',
+          example: 'PRINT "hello',
+          argumentTypes: [ArgumentType.Any],
+          returnTypes: [],
+          createCommand: (thing: ArgValue) => {
+            return {
+              execute(ctx: Context): void {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                let output = '';
+                
+                // Format the output differently based on the type
+                if (evaluatedThing.type === ArgumentType.String) {
+                  output = (evaluatedThing as StringValue).value;
+                } else if (evaluatedThing.type === ArgumentType.List) {
+                  // Format lists without the brackets for output
+                  output = (evaluatedThing as ListValue).items
+                    .map((item: ArgValue) => item.toString())
+                    .join(' ');
+                } else {
+                  output = evaluatedThing.toString();
+                }
+                
+                // Send to the output callback
+                ctx.output(output);
+              },
+              toString(): string {
+                return `PRINT ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.IOOperations
+        },
+        {
+          name: 'SHOW',
+          aliases: [],
+          description: 'Outputs the given value to the console, including data type information',
+          example: 'SHOW [a b c]',
+          argumentTypes: [ArgumentType.Any],
+          returnTypes: [],
+          createCommand: (thing: ArgValue) => {
+            return {
+              execute(ctx: Context): void {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                
+                // For SHOW, we include the original representation with quotes, brackets, etc.
+                ctx.output(evaluatedThing.toString());
+              },
+              toString(): string {
+                return `SHOW ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.IOOperations
+        },
+        {
+          name: 'UPPERCASE',
+          aliases: [],
+          description: 'Converts a word to uppercase',
+          example: 'UPPERCASE "hello',
+          argumentTypes: [ArgumentType.String],
+          returnTypes: [ArgumentType.String],
+          createCommand: (word: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedWord = evaluateArgValue(ctx, word);
+                
+                if (evaluatedWord.type !== ArgumentType.String) {
+                  throw new Error('UPPERCASE requires a word');
+                }
+                
+                return new StringValue((evaluatedWord as StringValue).value.toUpperCase());
+              },
+              toString(): string {
+                return `UPPERCASE ${word.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.TextProcessing
+        },
+        {
+          name: 'LOWERCASE',
+          aliases: [],
+          description: 'Converts a word to lowercase',
+          example: 'LOWERCASE "HELLO',
+          argumentTypes: [ArgumentType.String],
+          returnTypes: [ArgumentType.String],
+          createCommand: (word: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedWord = evaluateArgValue(ctx, word);
+                
+                if (evaluatedWord.type !== ArgumentType.String) {
+                  throw new Error('LOWERCASE requires a word');
+                }
+                
+                return new StringValue((evaluatedWord as StringValue).value.toLowerCase());
+              },
+              toString(): string {
+                return `LOWERCASE ${word.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.TextProcessing
+        },
+        {
+          name: 'WORDP',
+          aliases: ['WORD?'],
+          description: 'Returns true if the input is a word, false otherwise',
+          example: 'WORDP "hello',
+          argumentTypes: [ArgumentType.Any],
+          returnTypes: [ArgumentType.Boolean],
+          createCommand: (thing: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                return new BooleanValue(evaluatedThing.type === ArgumentType.String);
+              },
+              toString(): string {
+                return `WORDP ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.TextProcessing
+        },
+        {
+          name: 'LISTP',
+          aliases: ['LIST?'],
+          description: 'Returns true if the input is a list, false otherwise',
+          example: 'LISTP [a b c]',
+          argumentTypes: [ArgumentType.Any],
+          returnTypes: [ArgumentType.Boolean],
+          createCommand: (thing: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                return new BooleanValue(evaluatedThing.type === ArgumentType.List);
+              },
+              toString(): string {
+                return `LISTP ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'EMPTYP',
+          aliases: ['EMPTY?'],
+          description: 'Returns true if the input is an empty word or list, false otherwise',
+          example: 'EMPTYP []',
+          argumentTypes: [ArgumentType.Any],
+          returnTypes: [ArgumentType.Boolean],
+          createCommand: (thing: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                
+                if (evaluatedThing.type === ArgumentType.String) {
+                  return new BooleanValue((evaluatedThing as StringValue).value.length === 0);
+                } else if (evaluatedThing.type === ArgumentType.List) {
+                  return new BooleanValue((evaluatedThing as ListValue).items.length === 0);
+                }
+                
+                return new BooleanValue(false); // Non-words and non-lists are never empty
+              },
+              toString(): string {
+                return `EMPTYP ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'MEMBERP',
+          aliases: ['MEMBER?'],
+          description: 'Returns true if the first input is a member of the second input (list)',
+          example: 'MEMBERP "apple [banana apple orange]',
+          argumentTypes: [ArgumentType.Any, ArgumentType.List],
+          returnTypes: [ArgumentType.Boolean],
+          createCommand: (thing: ArgValue, list: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                const evaluatedList = evaluateArgValue(ctx, list);
+                
+                if (evaluatedList.type !== ArgumentType.List) {
+                  throw new Error('MEMBERP requires a list as the second argument');
+                }
+                
+                const items = (evaluatedList as ListValue).items;
+                
+                // Check if the thing is in the list
+                for (const item of items) {
+                  if (item.type === evaluatedThing.type) {
+                    if (item.type === ArgumentType.String && evaluatedThing.type === ArgumentType.String) {
+                      if ((item as StringValue).value === (evaluatedThing as StringValue).value) {
+                        return new BooleanValue(true);
+                      }
+                    } else if (item.type === ArgumentType.Number && evaluatedThing.type === ArgumentType.Number) {
+                      if ((item as NumberValue).value === (evaluatedThing as NumberValue).value) {
+                        return new BooleanValue(true);
+                      }
+                    }
+                  }
+                }
+                
+                return new BooleanValue(false);
+              },
+              toString(): string {
+                return `MEMBERP ${thing.toString()} ${list.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'REVERSE',
+          aliases: [],
+          description: 'Reverses the items in a list or the characters in a word',
+          example: 'REVERSE [a b c]',
+          argumentTypes: [ArgumentType.Any],
+          returnTypes: [ArgumentType.Any],
+          createCommand: (thing: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                
+                if (evaluatedThing.type === ArgumentType.List) {
+                  const list = evaluatedThing as ListValue;
+                  // Create a new array with the items in reverse order
+                  const reversedItems = [...list.items].reverse();
+                  return new ListValue(reversedItems);
+                } else if (evaluatedThing.type === ArgumentType.String) {
+                  const str = (evaluatedThing as StringValue).value;
+                  // Reverse the string
+                  const reversedStr = str.split('').reverse().join('');
+                  return new StringValue(reversedStr);
+                }
+                
+                throw new Error('REVERSE requires a list or word');
+              },
+              toString(): string {
+                return `REVERSE ${thing.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'MEMBER',
+          aliases: [],
+          description: 'Finds the first occurrence of the item in the list and returns the list starting from that point',
+          example: 'MEMBER "b [a b c d]',
+          argumentTypes: [ArgumentType.Any, ArgumentType.List],
+          returnTypes: [ArgumentType.List],
+          createCommand: (thing: ArgValue, list: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                const evaluatedList = evaluateArgValue(ctx, list);
+                
+                if (evaluatedList.type !== ArgumentType.List) {
+                  throw new Error('MEMBER requires a list as the second argument');
+                }
+                
+                const items = (evaluatedList as ListValue).items;
+                
+                // Find the first occurrence and return the sublist
+                for (let i = 0; i < items.length; i++) {
+                  const item = items[i];
+                  if (item.type === evaluatedThing.type) {
+                    if (item.type === ArgumentType.String && evaluatedThing.type === ArgumentType.String) {
+                      if ((item as StringValue).value === (evaluatedThing as StringValue).value) {
+                        return new ListValue(items.slice(i));
+                      }
+                    } else if (item.type === ArgumentType.Number && evaluatedThing.type === ArgumentType.Number) {
+                      if ((item as NumberValue).value === (evaluatedThing as NumberValue).value) {
+                        return new ListValue(items.slice(i));
+                      }
+                    }
+                  }
+                }
+                
+                // If not found, return an empty list
+                return new ListValue([]);
+              },
+              toString(): string {
+                return `MEMBER ${thing.toString()} ${list.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'REMOVE',
+          aliases: [],
+          description: 'Removes all occurrences of the first input from the second input (list)',
+          example: 'REMOVE "a [a b a c]',
+          argumentTypes: [ArgumentType.Any, ArgumentType.List],
+          returnTypes: [ArgumentType.List],
+          createCommand: (thing: ArgValue, list: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedThing = evaluateArgValue(ctx, thing);
+                const evaluatedList = evaluateArgValue(ctx, list);
+                
+                if (evaluatedList.type !== ArgumentType.List) {
+                  throw new Error('REMOVE requires a list as the second argument');
+                }
+                
+                const items = (evaluatedList as ListValue).items;
+                const result: ArgValue[] = [];
+                
+                // Filter out the items that match the first input
+                for (const item of items) {
+                  let shouldKeep = true;
+                  
+                  if (item.type === evaluatedThing.type) {
+                    if (item.type === ArgumentType.String && evaluatedThing.type === ArgumentType.String) {
+                      if ((item as StringValue).value === (evaluatedThing as StringValue).value) {
+                        shouldKeep = false;
+                      }
+                    } else if (item.type === ArgumentType.Number && evaluatedThing.type === ArgumentType.Number) {
+                      if ((item as NumberValue).value === (evaluatedThing as NumberValue).value) {
+                        shouldKeep = false;
+                      }
+                    }
+                  }
+                  
+                  if (shouldKeep) {
+                    result.push(item);
+                  }
+                }
+                
+                return new ListValue(result);
+              },
+              toString(): string {
+                return `REMOVE ${thing.toString()} ${list.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'REMDUP',
+          aliases: [],
+          description: 'Removes duplicate items from a list',
+          example: 'REMDUP [a b a c b]',
+          argumentTypes: [ArgumentType.List],
+          returnTypes: [ArgumentType.List],
+          createCommand: (list: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedList = evaluateArgValue(ctx, list);
+                
+                if (evaluatedList.type !== ArgumentType.List) {
+                  throw new Error('REMDUP requires a list');
+                }
+                
+                const items = (evaluatedList as ListValue).items;
+                const result: ArgValue[] = [];
+                const seen = new Set<string>(); // Use string representations for comparison
+                
+                // Only add items that haven't been seen before
+                for (const item of items) {
+                  const itemStr = JSON.stringify({
+                    type: item.type,
+                    value: item.type === ArgumentType.String ? (item as StringValue).value :
+                           item.type === ArgumentType.Number ? (item as NumberValue).value :
+                           item.toString()
+                  });
+                  
+                  if (!seen.has(itemStr)) {
+                    seen.add(itemStr);
+                    result.push(item);
+                  }
+                }
+                
+                return new ListValue(result);
+              },
+              toString(): string {
+                return `REMDUP ${list.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'FIRSTS',
+          aliases: [],
+          description: 'Returns a list containing the first item of each sublist',
+          example: 'FIRSTS [[a b] [c d] [e f]]',
+          argumentTypes: [ArgumentType.List],
+          returnTypes: [ArgumentType.List],
+          createCommand: (list: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedList = evaluateArgValue(ctx, list);
+                
+                if (evaluatedList.type !== ArgumentType.List) {
+                  throw new Error('FIRSTS requires a list of lists');
+                }
+                
+                const items = (evaluatedList as ListValue).items;
+                const result: ArgValue[] = [];
+                
+                for (const item of items) {
+                  if (item.type !== ArgumentType.List) {
+                    throw new Error('FIRSTS requires a list of lists');
+                  }
+                  
+                  const sublist = item as ListValue;
+                  if (sublist.items.length === 0) {
+                    throw new Error('Cannot take FIRST of an empty list');
+                  }
+                  
+                  result.push(sublist.items[0]);
+                }
+                
+                return new ListValue(result);
+              },
+              toString(): string {
+                return `FIRSTS ${list.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'BUTFIRSTS',
+          aliases: ['BFS'],
+          description: 'Returns a list containing all but the first item of each sublist',
+          example: 'BUTFIRSTS [[a b c] [d e f]]',
+          argumentTypes: [ArgumentType.List],
+          returnTypes: [ArgumentType.List],
+          createCommand: (list: ArgValue) => {
+            return {
+              execute(ctx: Context): ArgValue {
+                const evaluatedList = evaluateArgValue(ctx, list);
+                
+                if (evaluatedList.type !== ArgumentType.List) {
+                  throw new Error('BUTFIRSTS requires a list of lists');
+                }
+                
+                const items = (evaluatedList as ListValue).items;
+                const result: ArgValue[] = [];
+                
+                for (const item of items) {
+                  if (item.type !== ArgumentType.List) {
+                    throw new Error('BUTFIRSTS requires a list of lists');
+                  }
+                  
+                  const sublist = item as ListValue;
+                  if (sublist.items.length === 0) {
+                    throw new Error('Cannot take BUTFIRST of an empty list');
+                  }
+                  
+                  result.push(new ListValue(sublist.items.slice(1)));
+                }
+                
+                return new ListValue(result);
+              },
+              toString(): string {
+                return `BUTFIRSTS ${list.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ListProcessing
+        },
   ];
 
 export const commandList = LOGO_COMMANDS;

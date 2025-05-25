@@ -16,6 +16,7 @@ export enum ArgumentType {
   Boolean,
   Block,
   Condition,
+  Any, // Used for functions that can accept any type
 }
 
 /**
