@@ -193,11 +193,11 @@ function App() {
             HoneyLogo is a modern implementation of the Logo programming language with a focus on education and ease of use.
           </p>
           <p>
-            HoneyLogo was originally written by <a href="https://malcolholmes.org">Malcolm Holmes</a> in
+            HoneyLogo was originally written by <a target="_blank" href="https://malcolholmes.org">Malcolm Holmes</a> in
             the 1980s, and was used widely in schools in the UK and around the world. A wide range
             of support materials were made available by the publishing company, Glentop. These resources
             were curated and prepared by Martin Sims, Janet Forster
-            and <a href="https://holmesbrass.com">Dr Peter Holmes</a>.
+            and <a target="_blank" href="https://holmesbrass.com">Dr Peter Holmes</a>.
           </p>
           <p>
             This modern implementation has been made possible almost entirely due to the Windsurf AI
