@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/HelpIcon.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+import './styles/AboutIcon.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import { Modal, Button } from 'react-bootstrap'
 import Turtle, { TurtleHandle } from './components/Turtle'
 import CodeEditor from './components/CodeEditor'
 import OutputPanel from './components/OutputPanel'
@@ -18,6 +20,7 @@ function App() {
   const [output, setOutput] = useState<string>('')
   const [speed, setSpeed] = useState<number>(50) // Default speed (0-100)
   const [isDocsOpen, setIsDocsOpen] = useState(false)
+  const [showAbout, setShowAbout] = useState(false)
   const turtleRef = useRef<TurtleHandle>(null)
   
   // Higher speed value = less delay
@@ -130,8 +133,17 @@ function App() {
             onClick={toggleDocs}
             aria-label="Help"
             style={{ position: 'relative', zIndex: 1 }}
+            title="Help"
           >
             ?
+          </button>
+          <button 
+            className="about-icon" 
+            onClick={() => setShowAbout(true)}
+            aria-label="About"
+            title="About HoneyLogo"
+          >
+            i
           </button>
         </div>
       </header>
@@ -162,6 +174,47 @@ function App() {
       
       {/* Documentation Modal */}
       {isDocsOpen && <Docs isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} />}
+      
+      {/* About Modal */}
+      <Modal 
+        show={showAbout} 
+        onHide={() => setShowAbout(false)}
+        className="about-modal"
+        centered
+        scrollable
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>About HoneyLogo</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          <h5>HoneyLogo v1.0.0</h5>
+          <p>
+            HoneyLogo is a modern implementation of the Logo programming language with a focus on education and ease of use.
+          </p>
+          <p>
+            HoneyLogo was originally written by <a href="https://malcolholmes.org">Malcolm Holmes</a> in
+            the 1980s, and was used widely in schools in the UK and around the world. A wide range
+            of support materials were made available by the publishing company, Glentop. These resources
+            were curated and prepared by Martin Sims, Janet Forster
+            and <a href="https://holmesbrass.com">Dr Peter Holmes</a>.
+          </p>
+          <p>
+            This modern implementation has been made possible almost entirely due to the Windsurf AI
+            coding platform. Handing it a specification of what was required, combined with an
+            understanding of language design and implementation, allowed the AI to complete 90% of this
+            site with minimal human intervention.
+          </p>
+          <p>
+            We hope you enjoy this site that brings together the best of the 1980s with a modern twist!
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowAbout(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   )
 }
