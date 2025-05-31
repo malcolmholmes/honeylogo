@@ -1,0 +1,113 @@
+/* Main container */
+.split-container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Left panel (contains code and output) */
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 300px;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+/* Right panel (canvas) */
+.canvas-section {
+  flex: 1;
+  min-width: 400px;
+  height: 100%;
+  background-color: #f8f9fa;
+  overflow: hidden;
+}
+
+/* Vertical split container (code and output) */
+.split-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+/* Code section */
+.code-section {
+  width: 100%;
+  height: 100%;
+  background-color: #282c34;
+  color: #abb2bf;
+  overflow: hidden;
+}
+
+/* Output section */
+.output-section {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+  overflow: hidden;
+  border-top: 1px solid #dee2e6;
+}
+
+/* Split gutter styles */
+.gutter {
+  background-color: #dee2e6;
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transition: background-color 0.2s;
+  z-index: 1;
+}
+
+/* Vertical gutter (between code and output) */
+.gutter.gutter-vertical {
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo5865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABNJREFUCB1jYGRgYGBhYGXABEwBwQABWgDzVgAAAABJRU5ErkJggg==');
+  cursor: row-resize;
+  height: 8px !important;
+  margin: 0;
+}
+
+/* Horizontal gutter (between left panel and canvas) */
+.gutter.gutter-horizontal {
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+  cursor: col-resize;
+  width: 8px !important;
+  margin: 0;
+}
+
+/* Hover effect on gutters */
+.gutter:hover {
+  background-color: #a0a0a0;
+}
+
+/* Ensure proper sizing of child components */
+.code-section > *,
+.output-section > *,
+.canvas-section > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .split-container {
+    flex-direction: column;
+  }
+  
+  .left-panel,
+  .canvas-section {
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 50% !important;
+  }
+  
+  .gutter.gutter-horizontal {
+    width: 100% !important;
+    height: 8px !important;
+    cursor: row-resize !important;
+  }
+}

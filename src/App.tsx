@@ -5,6 +5,8 @@ import './styles/HelpIcon.css';
 import './styles/AboutIcon.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { Modal, Button } from 'react-bootstrap'
+import Split from 'react-split'
+import './styles/SplitPane.css'
 import Turtle, { TurtleHandle } from './components/Turtle'
 import CodeEditor from './components/CodeEditor'
 import OutputPanel from './components/OutputPanel'
@@ -118,7 +120,7 @@ function App() {
   }
 
   return (
-    <div className="container-fluid p-0">
+    <div className="container-fluid p-0" style={{ overflow: 'hidden' }}>
       <header className="bg-dark text-white p-3 d-flex justify-content-between align-items-center">
         <h1 className="mb-0">HoneyLogo</h1>
         <div className="d-flex align-items-center">
@@ -148,10 +150,26 @@ function App() {
         </div>
       </header>
       
-      <div className="row g-0 main-content">
-        <div className="col-md-4">
-          <div className="d-flex flex-column h-100">
-            <div className="flex-grow-1">
+      <Split
+        className="split-container"
+        direction="horizontal"
+        sizes={[40, 60]}
+        minSize={[300, 400]}
+        gutterSize={8}
+        snapOffset={30}
+        style={{ height: 'calc(100vh - 70px)' }}
+      >
+        <div className="left-panel">
+          <Split
+            className="split-wrapper"
+            direction="vertical"
+            sizes={[60, 40]}
+            minSize={100}
+            gutterSize={8}
+            gutterAlign="center"
+            snapOffset={30}
+          >
+            <div className="code-section">
               <CodeEditor 
                 code={code} 
                 onChange={setCode} 
@@ -159,18 +177,20 @@ function App() {
                 onClear={handleClear}
               />
             </div>
-            <div className="mb-0 mt-2">
-              <SpeedSlider speed={speed} onChange={handleSpeedChange} />
+            <div className="output-section">
+              <div style={{ padding: '10px 0' }}>
+                <SpeedSlider speed={speed} onChange={handleSpeedChange} />
+              </div>
+              <div style={{ height: 'calc(100% - 60px)' }}>
+                <OutputPanel output={output} />
+              </div>
             </div>
-            <div className="flex-grow-1">
-              <OutputPanel output={output} />
-            </div>
-          </div>
+          </Split>
         </div>
-        <div className="col-md-8">
+        <div className="canvas-section">
           <Turtle ref={turtleRef} />
         </div>
-      </div>
+      </Split>
       
       {/* Documentation Modal */}
       {isDocsOpen && <Docs isOpen={isDocsOpen} onClose={() => setIsDocsOpen(false)} />}
