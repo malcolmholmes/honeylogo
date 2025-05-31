@@ -177,11 +177,11 @@ function App() {
                 onClear={handleClear}
               />
             </div>
-            <div className="output-section">
-              <div style={{ padding: '10px 0' }}>
+            <div className="output-section d-flex flex-column" style={{ height: '100%' }}>
+              <div className="speed-slider-container">
                 <SpeedSlider speed={speed} onChange={handleSpeedChange} />
               </div>
-              <div style={{ height: 'calc(100% - 60px)' }}>
+              <div className="flex-grow-1 overflow-hidden">
                 <OutputPanel output={output} />
               </div>
             </div>

@@ -52,6 +52,16 @@
   background-color: #f8f9fa;
   overflow: hidden;
   border-top: 1px solid #dee2e6;
+  padding: 0;
+  margin: 0;
+}
+
+/* Speed slider container */
+.speed-slider-container {
+  flex-shrink: 0;
+  width: 100%;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
 }
 
 /* Split gutter styles */
