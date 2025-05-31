@@ -538,7 +538,7 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       name: 'SETPENCOLOR',
       aliases: ['SPC', 'SETPENCOLOUR'],
       description: 'Set the pen color',
-      example: 'SETPENCOLOR "red"',
+      example: 'SETPENCOLOR "red',
       argumentTypes: [ArgumentType.String],
       createCommand: (colorValue: ArgValue) => {
         return {
@@ -564,7 +564,7 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       name: 'SETBACKGROUND',
       aliases: ['SETSCREENCOLOR', 'SETSCREENCOLOUR', 'SETBG', 'SETSC'],
       description: 'Set the background color',
-      example: 'SETBACKGROUND "red"',
+      example: 'SETBACKGROUND "red',
       argumentTypes: [ArgumentType.String],
       createCommand: (colorValue: ArgValue) => {
         return {
