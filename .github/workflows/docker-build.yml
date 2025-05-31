@@ -37,9 +37,11 @@ jobs:
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "TAG=latest" >> $GITHUB_ENV
             echo "NODE_ENV=production" >> $GITHUB_ENV
+            echo "DEPLOY_URL=https://honeylogo.com/agent/webhook" >> $GITHUB_ENV
           else
             echo "TAG=develop" >> $GITHUB_ENV
             echo "NODE_ENV=development" >> $GITHUB_ENV
+            echo "DEPLOY_URL=https://dev.honeylogo.com/agent/webhook" >> $GITHUB_ENV
           fi
       - name: set up golang mods
         id: go_mods
@@ -61,7 +63,7 @@ jobs:
       - name: Trigger deployment webhook
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         run: |
-          DEPLOY_URL=${{ secrets.DEPLOY_URL }}
+          DEPLOY_URL=${{ env.DEPLOY_URL }}
           if [[ -n "$DEPLOY_URL" ]]; then
             curl -sH "webhook-token: ${{ secrets.WEBHOOK_TOKEN }}" $DEPLOY_URL
           fi
