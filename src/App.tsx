@@ -24,6 +24,7 @@ function App() {
   const [isDocsOpen, setIsDocsOpen] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
   const turtleRef = useRef<TurtleHandle>(null)
+  const [isAnimating, setIsAnimating] = useState(false);
   
   // Higher speed value = less delay
   const getDelay = () => {
@@ -38,9 +39,17 @@ function App() {
     }
   }, [speed]);
   
+  const handleAnimationEnd = () => {
+    setIsAnimating(false);
+  }
   const handleExecute = () => {
     if (!turtleRef.current) return;
     
+    if (isAnimating) {
+      turtleRef.current.cancelAnimation();
+      setIsAnimating(false);
+      return;
+    }
     try {
       // Clear previous output and turtle drawings
       setOutput('')
@@ -64,6 +73,7 @@ function App() {
       );
       
       // Start executing commands with delay
+      setIsAnimating(true);
       executeWithDelay(program, context, 0);
     } catch (error) {
       console.error(error);
@@ -175,6 +185,7 @@ function App() {
                 onChange={setCode} 
                 onExecute={handleExecute} 
                 onClear={handleClear}
+                isAnimating={isAnimating}
               />
             </div>
             <div className="output-section d-flex flex-column" style={{ height: '100%' }}>
@@ -187,8 +198,8 @@ function App() {
             </div>
           </Split>
         </div>
-        <div className="canvas-section">
-          <Turtle ref={turtleRef} />
+        <div className="turtle-container" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          <Turtle ref={turtleRef} onAnimationEnd={handleAnimationEnd} />
         </div>
       </Split>
       

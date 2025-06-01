@@ -1,6 +1,8 @@
 import React, { useImperativeHandle, useRef, useEffect, forwardRef } from 'react';
 
-interface TurtleProps {}
+interface TurtleProps {
+  onAnimationEnd?: () => void;
+}
 
 export interface TurtleHandle {
   forward: (distance: number) => void;
@@ -23,6 +25,7 @@ export interface TurtleHandle {
   home?: () => void;
   wait?: (duration: number) => void;
   fill?: () => void;
+  cancelAnimation?: () => void;
 }
 
 enum PenMode {
@@ -31,7 +34,7 @@ enum PenMode {
   Reverse = 'reverse'
 }
 
-const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
+const Turtle = forwardRef<TurtleHandle, TurtleProps>((turtleProps, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   
@@ -50,7 +53,7 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
   const animationQueue = useRef<(() => void)[]>([]); // Queue for pending animations
   const isTurtleVisible = useRef(true); // Track if turtle is visible
   const penSize = useRef(2); // Pen size
-  
+
   // Function to erase the turtle at its previous position
   const eraseTurtle = () => {
     const ctx = contextRef.current;
@@ -115,6 +118,7 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
       }
     } else {
       animationInProgress.current = false;
+      turtleProps.onAnimationEnd?.();
     }
   };
 
@@ -195,7 +199,9 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
               processNextAnimation();
               return;
             }
-            
+            if (!animationInProgress.current) {
+              return;
+            }
             currentStep++;
             
             // Calculate incremental movement
@@ -498,6 +504,9 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
               processNextAnimation();
               return;
             }
+            if (!animationInProgress.current) {
+              return;
+            }
             
             currentStep++;
             
@@ -728,6 +737,11 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((_, ref) => {
           processNextAnimation();
         });
       },
+    };
+
+    turtleInterface.cancelAnimation = () => {
+      animationInProgress.current = false;
+      animationQueue.current = [];
     };
     return turtleInterface;
   });

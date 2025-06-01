@@ -6,9 +6,10 @@ interface CodeEditorProps {
   onChange: (code: string) => void;
   onExecute: () => void;
   onClear: () => void;
+  isAnimating: boolean;
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, onExecute, onClear }) => {
+const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, onExecute, onClear, isAnimating }) => {
   const [popupCommand, setPopupCommand] = useState<CommandSpec | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
@@ -235,15 +236,16 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, onExecute, onCl
       <div className="card-footer p-0">
         <div className="d-flex">
           <button
-            className="btn btn-success flex-grow-1 rounded-0"
+            className={`btn ${isAnimating ? 'btn-danger' : 'btn-success'} flex-grow-1 rounded-0`}
             onClick={onExecute}
             title="Execute (Ctrl+Enter)"
           >
-            Execute
+            {isAnimating ? 'Cancel' : 'Execute'}
           </button>
           <button
             className="btn btn-secondary flex-grow-1 rounded-0 border-left"
             onClick={onClear}
+            disabled={isAnimating}
           >
             Clear
           </button>
