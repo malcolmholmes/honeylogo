@@ -498,7 +498,6 @@ function parseProcedureDefinition(tokens: Token[], start: number): [Command | nu
       execute(ctx: Context): void {
         const proc = new ProcedureValue(procedureName, paramNames, procedureCommands);
         ctx.setProcedure(procedureName, proc);
-        ctx.output(`Defined procedure: ${procedureName}`);
       },
       toString(): string {
         const paramsStr = paramNames.map(p => `:${p}`).join(' ');
