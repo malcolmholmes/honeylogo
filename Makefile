@@ -9,6 +9,7 @@ run: build-js
 	CONFIGS=override.yaml go run .
 
 build-js:
+	cp -r static/* public/ && \
 	bun install && \
 	bun build src/main.tsx \
 		--target=browser \

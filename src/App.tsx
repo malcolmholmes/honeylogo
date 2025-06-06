@@ -132,7 +132,9 @@ function App() {
   return (
     <div className="container-fluid p-0" style={{ overflow: 'hidden' }}>
       <header className="bg-dark text-white p-3 d-flex justify-content-between align-items-center">
-        <h1 className="mb-0">HoneyLogo</h1>
+        <h1 className="mb-0">
+          <img src="images/logo.svg" alt="HoneyLogo" width="100px"></img>
+        </h1>
         <div className="d-flex align-items-center">
           <div className="me-3">
             <ProgramManager 

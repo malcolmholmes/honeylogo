@@ -34,6 +34,7 @@ WORKDIR /app
 # Copy built artifacts from previous stages
 COPY --from=go-builder /app/victor /usr/bin/victor
 COPY --from=ts-builder /app/public /app
+COPY --from=ts-builder /app/static /app
 
 # Set environment variables and entrypoint
 ENV PATH=/usr/bin:$PATH
