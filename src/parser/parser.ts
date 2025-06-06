@@ -2,6 +2,7 @@
  * Parser for the Logo language
  */
 import { Token, TokenType } from './lexer';
+import { StopError, OutputError, NoProcedureOutputError } from '../errors';
 import { 
   Command,
   commandMap,
@@ -207,6 +208,82 @@ function parsePrimaryExpression(tokens: Token[], start: number): [ArgValue | nul
         return [new CommandValue(command), consumed];
       } catch (e) {
         throw new ParserError(`Error parsing command in expression: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    case TokenType.PROCEDURE:
+      try {
+        const procedureName = token.value.toLowerCase();
+        
+        // Use the same argument parsing approach as in the parseProcedureCall function
+        const args: ArgValue[] = [];
+        let consumed = 1; // Start with 1 for the procedure name token
+        
+        // Parse arguments just like in parseProcedureCall
+        while (start + consumed < tokens.length) {
+          try {
+            const [arg, argConsumed] = parseExpression(ArgumentType.Any, tokens, start + consumed);
+            if (!arg) break;
+            
+            args.push(arg);
+            consumed += argConsumed;
+          } catch (e) {
+            // If parsing fails, we've reached the end of arguments
+            break;
+          }
+        }
+        
+        // Create a wrapper that will execute the procedure and handle its output
+        return [new CommandValue({
+          execute(ctx: Context): ArgValue | void {
+            const proc = ctx.getProcedure(procedureName);
+            if (!proc) {
+              throw new Error(`Undefined procedure: ${procedureName}`);
+            }
+            
+            // Create a procedure context and execute it with proper error handling
+            try {
+              // Evaluate all arguments before passing them to the procedure
+              const evaluatedArgs = args.map(arg => evaluateArgValue(ctx, arg));
+              
+              // Create a new context with parameters
+              const procContext = ctx.createProcedureContext(proc.paramNames, evaluatedArgs);
+              
+              // Execute the procedure commands with OutputError handling
+              let lastResult: ArgValue | void = undefined;
+              for (const cmd of proc.commands) {
+                try {
+                  const result = cmd.execute(procContext);
+                  if (result !== undefined) {
+                    procContext.setLastResult(result);
+                    lastResult = result;
+                  }
+                } catch (error) {
+                  if (error instanceof OutputError) {
+                    // Return the output value from the procedure
+                    return error.value;
+                  }
+                  throw error; // Rethrow other errors
+                }
+              }
+              
+              // If we get here and no output was produced, throw an error
+              if (lastResult === undefined) {
+                throw new NoProcedureOutputError(procedureName);
+              }
+              
+              return lastResult;
+            } catch (error) {
+              if (error instanceof OutputError) {
+                return error.value;
+              }
+              throw error;
+            }
+          },
+          toString(): string {
+            return `${procedureName}${args.length > 0 ? ' ' + args.map((a) => a.toString()).join(' ') : ''}`;
+          }
+        }), consumed];
+      } catch (e) {
+        throw new ParserError(`Error parsing procedure in expression: ${e instanceof Error ? e.message : String(e)}`);
       }
       
     default:
@@ -556,10 +633,19 @@ function parseProcedureCall(tokens: Token[], start: number): [Command | null, nu
         // Execute the procedure commands
         let lastResult: ArgValue | void = undefined;
         for (const cmd of proc.commands) {
-          const result = cmd.execute(procContext);
-          if (result !== undefined) {
-            procContext.setLastResult(result);
-            lastResult = result;
+          try {
+            const result = cmd.execute(procContext);
+            if (result !== undefined) {
+              procContext.setLastResult(result);
+              lastResult = result;
+            }
+          } catch (error) {
+            if (error instanceof StopError) {
+              return lastResult;
+            } else if (error instanceof OutputError) {
+              return (error as OutputError).value;
+            }
+            throw error;
           }
         }
         

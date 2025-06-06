@@ -5,17 +5,18 @@
  * including argument types and command creation functions.
  */
 import { TurtleHandle } from './components/Turtle';
-import { 
+import { StopError, OutputError, ByeError } from './errors';
+import {
+  ArgValue,
   ArgumentType,
-  ArgValue, 
-  NumberValue, 
-  StringValue,
   BlockValue,
+  ListValue,
+  NumberValue,
+  StringValue,
   CommandValue,
   OperationValue,
   VariableValue,
   ProcedureValue,
-  ListValue,
   BooleanValue
 } from './parser/types';
 
@@ -1641,6 +1642,63 @@ export const LOGO_COMMANDS: CommandSpec[] = [
             };
           },
           category: CommandCategory.ListProcessing
+        },
+        {
+          name: 'STOP',
+          aliases: [],
+          description: 'Stop execution of the current procedure',
+          example: 'TO SQUARE :SIZE\nIF :SIZE < 10 [STOP]\nREPEAT 4 [FORWARD :SIZE RIGHT 90]\nEND\nSQUARE 10',
+          argumentTypes: [],
+          createCommand: () => {
+            return {
+              execute(): void {
+                console.log('EXECUTE STOP');
+                throw new StopError();
+              },
+              toString(): string {
+                return 'STOP';
+              }
+            };
+          },
+          category: CommandCategory.ControlStructures
+        },
+        {
+          name: 'OUTPUT',
+          aliases: [],
+          description: 'Return a value from a procedure',
+          example: 'TO DOUBLE :num\nOUTPUT :num * 2\nEND\nDOUBLE 5',
+          argumentTypes: [ArgumentType.Any],
+          createCommand: (arg: ArgValue) => {
+            return {
+              execute(ctx: Context): void {
+                // Evaluate the argument before outputting it
+                const value = evaluateArgValue(ctx, arg);
+                throw new OutputError(value);
+              },
+              toString(): string {
+                return `OUTPUT ${arg.toString()}`;
+              }
+            };
+          },
+          category: CommandCategory.ControlStructures
+        },
+        {
+          name: 'BYE',
+          aliases: [],
+          description: 'Exit the Logo program',
+          example: 'BYE',
+          argumentTypes: [],
+          createCommand: () => {
+            return {
+              execute(): void {
+                throw new ByeError();
+              },
+              toString(): string {
+                return 'BYE';
+              }
+            };
+          },
+          category: CommandCategory.ControlStructures
         },
   ];
 
