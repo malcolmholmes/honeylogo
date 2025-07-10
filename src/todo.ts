@@ -547,27 +547,6 @@ export const UNIMPLEMENTED_COMMANDS: UnimplementedCommand[] = [
     priority: 'medium'
   },
   {
-    name: 'label',
-    aliases: [],
-    description: 'Add text to graphics',
-    category: 'Graphics',
-    priority: 'medium'
-  },
-  {
-    name: 'setlabelheight',
-    aliases: [],
-    description: 'Set label height',
-    category: 'Graphics',
-    priority: 'low'
-  },
-  {
-    name: 'setlabelfont',
-    aliases: [],
-    description: 'Set label font',
-    category: 'Graphics',
-    priority: 'low'
-  },
-  {
     name: 'setscrunch',
     aliases: [],
     description: 'Set aspect ratio',

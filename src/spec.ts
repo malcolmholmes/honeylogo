@@ -1172,8 +1172,7 @@ export const LOGO_COMMANDS: CommandSpec[] = [
     {
       name: 'FILL',
       aliases: ['FLOODFILL'],
-      description: 'Fill area with current pen color',
-      example: 'FILL',
+      description: 'Fill the current closed area with the current pen color',
       argumentTypes: [],
       createCommand: () => {
         return {
@@ -1181,11 +1180,168 @@ export const LOGO_COMMANDS: CommandSpec[] = [
             ctx.turtle.fill?.();
           },
           toString(): string {
-            return "FILL";
+            return 'FILL';
           }
         };
       },
       category: CommandCategory.TurtleGraphics
+    },
+    {
+      name: 'LABEL',
+      aliases: ['TEXT'],
+      description: 'Draw text at the current turtle position. Accepts strings or lists.',
+      example: 'LABEL "Hello, World!" or LABEL [Hello World]',
+      argumentTypes: [ArgumentType.Any],
+      createCommand: (text: ArgValue) => {
+        return {
+          execute(ctx: Context): void {
+            const evaluatedText = evaluateArgValue(ctx, text);
+            let textStr: string;
+            
+            // Format the text based on its type, matching PRINT behavior
+            if (evaluatedText.type === ArgumentType.String) {
+              textStr = (evaluatedText as StringValue).value;
+            } else if (evaluatedText.type === ArgumentType.List) {
+              // Format lists without brackets, space-separated
+              textStr = (evaluatedText as ListValue).items
+                .map((item: ArgValue) => item.toString())
+                .join(' ');
+            } else {
+              // For any other type, use its string representation
+              textStr = evaluatedText.toString();
+            }
+            
+            ctx.turtle.drawLabel?.(textStr);
+          },
+          toString(): string {
+            return `LABEL ${text.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.Graphics
+    },
+    {
+      name: 'SETLABELHEIGHT',
+      aliases: ['SETLH'],
+      description: 'Set the height of text drawn with LABEL in pixels',
+      example: 'SETLABELHEIGHT 20',
+      argumentTypes: [ArgumentType.Number],
+      createCommand: (height: ArgValue) => {
+        return {
+          execute(ctx: Context): void {
+            const evaluatedHeight = evaluateArgValue(ctx, height);
+            if (evaluatedHeight.type !== ArgumentType.Number) {
+              throw new Error('SETLABELHEIGHT command requires a number');
+            }
+            const heightNum = (evaluatedHeight as NumberValue).value;
+            ctx.turtle.setLabelHeight?.(Math.round(heightNum));
+          },
+          toString(): string {
+            return `SETLABELHEIGHT ${height.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.Graphics
+    },
+    {
+      name: 'SETLABELFONT',
+      aliases: ['SETLF'],
+      description: 'Set the font family for text drawn with LABEL',
+      example: 'SETLABELFONT "Arial"',
+      argumentTypes: [ArgumentType.String],
+      createCommand: (font: ArgValue) => {
+        return {
+          execute(ctx: Context): void {
+            const evaluatedFont = evaluateArgValue(ctx, font);
+            if (evaluatedFont.type !== ArgumentType.String) {
+              throw new Error('SETLABELFONT command requires a string');
+            }
+            const fontStr = (evaluatedFont as StringValue).value;
+            ctx.turtle.setLabelFont?.(fontStr);
+          },
+          toString(): string {
+            return `SETLABELFONT ${font.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.Graphics
+    },
+    {
+      name: 'SETLABELWEIGHT',
+      aliases: ['SETLW'],
+      description: 'Set the font weight for text drawn with LABEL (NORMAL or BOLD)',
+      example: 'SETLABELWEIGHT "BOLD"',
+      argumentTypes: [ArgumentType.String],
+      createCommand: (weight: ArgValue) => {
+        return {
+          execute(ctx: Context): void {
+            const evaluatedWeight = evaluateArgValue(ctx, weight);
+            if (evaluatedWeight.type !== ArgumentType.String) {
+              throw new Error('SETLABELWEIGHT command requires a string (NORMAL or BOLD)');
+            }
+            const weightStr = (evaluatedWeight as StringValue).value.toUpperCase();
+            ctx.turtle.setLabelWeight?.(weightStr === 'BOLD' ? 'bold' : 'normal');
+          },
+          toString(): string {
+            return `SETLABELWEIGHT ${weight.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.Graphics
+    },
+    {
+      name: 'SETLABELSTYLE',
+      aliases: ['SETLS'],
+      description: 'Set the font style for text drawn with LABEL (NORMAL or ITALIC)',
+      example: 'SETLABELSTYLE "ITALIC"',
+      argumentTypes: [ArgumentType.String],
+      createCommand: (style: ArgValue) => {
+        return {
+          execute(ctx: Context): void {
+            const evaluatedStyle = evaluateArgValue(ctx, style);
+            if (evaluatedStyle.type !== ArgumentType.String) {
+              throw new Error('SETLABELSTYLE command requires a string (NORMAL or ITALIC)');
+            }
+            const styleStr = (evaluatedStyle as StringValue).value.toUpperCase();
+            ctx.turtle.setLabelStyle?.(styleStr === 'ITALIC' ? 'italic' : 'normal');
+          },
+          toString(): string {
+            return `SETLABELSTYLE ${style.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.Graphics
+    },
+    {
+      name: 'SETLABELDECORATION',
+      aliases: ['SETLD'],
+      description: 'Set text decoration for text drawn with LABEL (NONE, UNDERLINE, or LINE-THROUGH)',
+      example: 'SETLABELDECORATION "UNDERLINE"',
+      argumentTypes: [ArgumentType.String],
+      createCommand: (decoration: ArgValue) => {
+        return {
+          execute(ctx: Context): void {
+            const evaluatedDeco = evaluateArgValue(ctx, decoration);
+            if (evaluatedDeco.type !== ArgumentType.String) {
+              throw new Error('SETLABELDECORATION command requires a string (NONE, UNDERLINE, or LINE-THROUGH)');
+            }
+            const decoStr = (evaluatedDeco as StringValue).value.toUpperCase();
+            let decorationValue: 'none' | 'underline' | 'line-through' = 'none';
+            
+            if (decoStr === 'UNDERLINE') {
+              decorationValue = 'underline';
+            } else if (decoStr === 'LINE-THROUGH' || decoStr === 'LINETHROUGH') {
+              decorationValue = 'line-through';
+            }
+            
+            ctx.turtle.setLabelDecoration?.(decorationValue);
+          },
+          toString(): string {
+            return `SETLABELDECORATION ${decoration.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.Graphics
     },
         // List Processing Functions
         {

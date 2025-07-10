@@ -26,6 +26,14 @@ export interface TurtleHandle {
   wait?: (duration: number) => void;
   fill?: () => void;
   cancelAnimation?: () => void;
+  
+  // Label-related methods
+  setLabelHeight?: (height: number) => void;
+  setLabelFont?: (font: string) => void;
+  setLabelWeight?: (weight: 'normal' | 'bold') => void;
+  setLabelStyle?: (style: 'normal' | 'italic') => void;
+  setLabelDecoration?: (decoration: 'none' | 'underline' | 'line-through') => void;
+  drawLabel?: (text: string) => void;
 }
 
 enum PenMode {
@@ -53,6 +61,13 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((turtleProps, ref) => {
   const animationQueue = useRef<(() => void)[]>([]); // Queue for pending animations
   const isTurtleVisible = useRef(true); // Track if turtle is visible
   const penSize = useRef(2); // Pen size
+  
+  // Text styling state
+  const labelHeight = useRef(16); // Default label height in pixels
+  const labelFont = useRef('Arial'); // Default font family for labels
+  const labelWeight = useRef('normal'); // Font weight (normal, bold, etc.)
+  const labelStyle = useRef('normal'); // Font style (normal, italic)
+  const labelDecoration = useRef('none'); // Text decoration (none, underline, line-through)
 
   // Function to erase the turtle at its previous position
   const eraseTurtle = () => {
@@ -161,6 +176,63 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((turtleProps, ref) => {
     };
   }, []);
 
+  // Draw text at the current turtle position with rotation
+  const drawLabel = (text: string) => {
+    const ctx = contextRef.current;
+    if (!ctx) return;
+    
+    // Save the current context state
+    ctx.save();
+    
+    // Move to the turtle's position
+    ctx.translate(position.current.x, position.current.y);
+    
+    // Apply rotation based on turtle's heading
+    // Convert angle to radians and adjust for canvas coordinate system
+    const radians = (angle.current * Math.PI) / 180;
+    ctx.rotate(radians);
+    
+    // Build font string with all text styles
+    const fontParts = [
+      labelStyle.current === 'italic' ? 'italic' : '',
+      labelWeight.current === 'bold' ? 'bold' : '',
+      `${labelHeight.current}px`,
+      labelFont.current
+    ].filter(Boolean).join(' ');
+    
+    // Set text properties
+    ctx.font = fontParts;
+    ctx.fillStyle = color.current;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    
+    // Apply text decoration
+    if (labelDecoration.current === 'underline' || labelDecoration.current === 'line-through') {
+      const metrics = ctx.measureText(text);
+      const y = labelDecoration.current === 'underline' ? 5 : -labelHeight.current / 4;
+      
+      ctx.strokeStyle = color.current;
+      ctx.lineWidth = Math.max(1, labelHeight.current / 15);
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(metrics.width, y);
+      ctx.stroke();
+      
+      if (labelDecoration.current === 'line-through') {
+        ctx.beginPath();
+        ctx.moveTo(0, -y);
+        ctx.lineTo(metrics.width, -y);
+        ctx.stroke();
+      }
+    }
+    
+    // Draw the text at the current position (0,0 after translate and rotate)
+    ctx.fillText(text, 0, 0);
+    
+    // Restore the context state
+    ctx.restore();
+  };
+
   // Expose methods to parent component
   useImperativeHandle(ref, () => {
     // Create the interface object
@@ -172,6 +244,56 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((turtleProps, ref) => {
       }
     };
     const turtleInterface: TurtleHandle = {
+      // Add label-related methods
+      setLabelHeight: (height: number) => {
+        labelHeight.current = Math.max(1, Math.min(100, height)); // Clamp between 1 and 100
+      },
+      
+      setLabelFont: (font: string) => {
+        labelFont.current = font || 'Arial';
+      },
+      
+      setLabelWeight: (weight: string) => {
+        labelWeight.current = weight === 'bold' ? 'bold' : 'normal';
+      },
+      
+      setLabelStyle: (style: string) => {
+        labelStyle.current = style === 'italic' ? 'italic' : 'normal';
+      },
+      
+      setLabelDecoration: (decoration: string) => {
+        labelDecoration.current = ['none', 'underline', 'line-through'].includes(decoration) 
+          ? decoration 
+          : 'none';
+      },
+      
+      drawLabel: (text: string) => {
+        const animateLabel = () => {
+          if (!contextRef.current) {
+            processNextAnimation();
+            return;
+          }
+          
+          // Erase the turtle at its previous position
+          if (isTurtleVisible.current) {
+            eraseTurtle();
+          }
+          
+          // Draw the label
+          drawLabel(text);
+          
+          // Redraw the turtle at its new position
+          if (isTurtleVisible.current) {
+            drawTurtle();
+          }
+          
+          // Process next animation
+          processNextAnimation();
+        };
+        
+        // Queue the animation
+        animate(animateLabel);
+      },
       forward: (distance: number) => {
         // Queue this animation
         const animateForward = () => {
