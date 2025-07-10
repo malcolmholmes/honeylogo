@@ -1041,6 +1041,64 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       category: CommandCategory.MathsFunctions
     },
     {
+      name: 'RANDOM',
+      aliases: ['RND'],
+      description: 'Returns a random number between 0 and the given number',
+      example: 'RANDOM 10',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (max: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedMax = evaluateArgValue(ctx, max);
+            if (evaluatedMax.type !== ArgumentType.Number) {
+              throw new Error('RANDOM command requires a number');
+            }
+            const maxNum = (evaluatedMax as NumberValue).value;
+            if (maxNum <= 0) {
+              throw new Error('RANDOM command requires a positive number');
+            }
+            return new NumberValue(Math.floor(Math.random() * maxNum));
+          },
+          toString(): string {
+            return `RANDOM ${max.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'CHAR',
+      aliases: ['CHARACTER'],
+      description: 'Returns the character corresponding to the given character code',
+      example: 'CHAR 65 ; Returns "A"',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.String],
+      createCommand: (code: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedCode = evaluateArgValue(ctx, code);
+            if (evaluatedCode.type !== ArgumentType.Number) {
+              throw new Error('CHAR command requires a number');
+            }
+            const charCode = Math.round((evaluatedCode as NumberValue).value);
+            // Allow Unicode characters in the Basic Multilingual Plane (0-65535)
+            // Exclude control characters (0-31), surrogates (0xD800-0xDFFF), and non-characters (0xFFFE, 0xFFFF)
+            if (charCode < 0 || charCode > 0xFFFF || 
+                (charCode >= 0xD800 && charCode <= 0xDFFF) ||
+                charCode === 0xFFFE || charCode === 0xFFFF) {
+              throw new Error('CHAR code must be a valid Unicode code point (0-65535, excluding surrogates and non-characters)');
+            }
+            return new StringValue(String.fromCharCode(charCode));
+          },
+          toString(): string {
+            return `CHAR ${code.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.TextProcessing
+    },
+    {
       name: 'POW',
       aliases: ['POWER', '^'],
       description: 'Raise a number to a power',

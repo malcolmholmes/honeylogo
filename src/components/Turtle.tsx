@@ -189,7 +189,7 @@ const Turtle = forwardRef<TurtleHandle, TurtleProps>((turtleProps, ref) => {
     
     // Apply rotation based on turtle's heading
     // Convert angle to radians and adjust for canvas coordinate system
-    const radians = (angle.current * Math.PI) / 180;
+    const radians = (angle.current +90) * Math.PI / 180;
     ctx.rotate(radians);
     
     // Build font string with all text styles
