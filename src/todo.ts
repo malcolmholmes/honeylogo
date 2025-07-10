@@ -300,13 +300,6 @@ export const UNIMPLEMENTED_COMMANDS: UnimplementedCommand[] = [
     priority: 'high'
   },
   {
-    name: 'power',
-    aliases: [],
-    description: 'Raise a number to a power',
-    category: 'Arithmetic',
-    priority: 'medium'
-  },
-  {
     name: 'modulo',
     aliases: [],
     description: 'Get the remainder of division',
@@ -349,13 +342,6 @@ export const UNIMPLEMENTED_COMMANDS: UnimplementedCommand[] = [
     priority: 'medium'
   },
   {
-    name: 'exp',
-    aliases: [],
-    description: 'Exponential function',
-    category: 'Arithmetic',
-    priority: 'medium'
-  },
-  {
     name: 'log10',
     aliases: [],
     description: 'Base-10 logarithm',
@@ -366,62 +352,6 @@ export const UNIMPLEMENTED_COMMANDS: UnimplementedCommand[] = [
     name: 'ln',
     aliases: [],
     description: 'Natural logarithm',
-    category: 'Arithmetic',
-    priority: 'medium'
-  },
-  {
-    name: 'sin',
-    aliases: [],
-    description: 'Sine function (degrees)',
-    category: 'Arithmetic',
-    priority: 'medium'
-  },
-  {
-    name: 'cos',
-    aliases: [],
-    description: 'Cosine function (degrees)',
-    category: 'Arithmetic',
-    priority: 'medium'
-  },
-  {
-    name: 'tan',
-    aliases: [],
-    description: 'Tangent function (degrees)',
-    category: 'Arithmetic',
-    priority: 'medium'
-  },
-  {
-    name: 'arctan',
-    aliases: [],
-    description: 'Arctangent function (degrees)',
-    category: 'Arithmetic',
-    priority: 'medium'
-  },
-  {
-    name: 'radsin',
-    aliases: [],
-    description: 'Sine function (radians)',
-    category: 'Arithmetic',
-    priority: 'medium'
-  },
-  {
-    name: 'radcos',
-    aliases: [],
-    description: 'Cosine function (radians)',
-    category: 'Arithmetic',
-    priority: 'medium'
-  },
-  {
-    name: 'radtan',
-    aliases: [],
-    description: 'Tangent function (radians)',
-    category: 'Arithmetic',
-    priority: 'medium'
-  },
-  {
-    name: 'radarctan',
-    aliases: [],
-    description: 'Arctangent function (radians)',
     category: 'Arithmetic',
     priority: 'medium'
   },
@@ -521,14 +451,6 @@ export const UNIMPLEMENTED_COMMANDS: UnimplementedCommand[] = [
 
   // ===== Graphics =====
   // Turtle Motion
-  {
-    name: 'back',
-    aliases: ['bk'],
-    description: 'Move the turtle backward',
-    category: 'Graphics',
-    priority: 'high',
-    example: 'BACK 100 ; Move backward 100 units'
-  },
   {
     name: 'arc',
     aliases: [],

@@ -734,6 +734,389 @@ export const LOGO_COMMANDS: CommandSpec[] = [
       category: CommandCategory.MathsFunctions
     },
     {
+      name: 'SIN',
+      aliases: [],
+      description: 'Calculate the sine of an angle in degrees',
+      example: 'SIN 30',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (angle: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedAngle = evaluateArgValue(ctx, angle);
+            if (evaluatedAngle.type !== ArgumentType.Number) {
+              throw new Error('SIN command requires a number');
+            }
+            const radians = (evaluatedAngle as NumberValue).value * (Math.PI / 180);
+            const result = Math.sin(radians);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `SIN ${angle.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'COS',
+      aliases: [],
+      description: 'Calculate the cosine of an angle in degrees',
+      example: 'COS 60',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (angle: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedAngle = evaluateArgValue(ctx, angle);
+            if (evaluatedAngle.type !== ArgumentType.Number) {
+              throw new Error('COS command requires a number');
+            }
+            const radians = (evaluatedAngle as NumberValue).value * (Math.PI / 180);
+            const result = Math.cos(radians);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `COS ${angle.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'TAN',
+      aliases: [],
+      description: 'Calculate the tangent of an angle in degrees',
+      example: 'TAN 45',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (angle: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedAngle = evaluateArgValue(ctx, angle);
+            if (evaluatedAngle.type !== ArgumentType.Number) {
+              throw new Error('TAN command requires a number');
+            }
+            const radians = (evaluatedAngle as NumberValue).value * (Math.PI / 180);
+            const result = Math.tan(radians);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `TAN ${angle.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'ARCTAN',
+      aliases: [],
+      description: 'Calculate the arctangent in degrees',
+      example: 'ARCTAN 1',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (value: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedValue = evaluateArgValue(ctx, value);
+            if (evaluatedValue.type !== ArgumentType.Number) {
+              throw new Error('ARCTAN command requires a number');
+            }
+            const result = Math.atan((evaluatedValue as NumberValue).value) * (180 / Math.PI);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `ARCTAN ${value.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'RADSIN',
+      aliases: [],
+      description: 'Calculate the sine of an angle in radians',
+      example: 'RADSIN 0.5',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (radians: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedRadians = evaluateArgValue(ctx, radians);
+            if (evaluatedRadians.type !== ArgumentType.Number) {
+              throw new Error('RADSIN command requires a number');
+            }
+            const result = Math.sin((evaluatedRadians as NumberValue).value);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `RADSIN ${radians.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'RADCOS',
+      aliases: [],
+      description: 'Calculate the cosine of an angle in radians',
+      example: 'RADCOS 1',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (radians: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedRadians = evaluateArgValue(ctx, radians);
+            if (evaluatedRadians.type !== ArgumentType.Number) {
+              throw new Error('RADCOS command requires a number');
+            }
+            const result = Math.cos((evaluatedRadians as NumberValue).value);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `RADCOS ${radians.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'RADTAN',
+      aliases: [],
+      description: 'Calculate the tangent of an angle in radians',
+      example: 'RADTAN 0.5',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (radians: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedRadians = evaluateArgValue(ctx, radians);
+            if (evaluatedRadians.type !== ArgumentType.Number) {
+              throw new Error('RADTAN command requires a number');
+            }
+            const result = Math.tan((evaluatedRadians as NumberValue).value);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `RADTAN ${radians.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'RADARCTAN',
+      aliases: [],
+      description: 'Calculate the arctangent in radians',
+      example: 'RADARCTAN 1',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (value: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedValue = evaluateArgValue(ctx, value);
+            if (evaluatedValue.type !== ArgumentType.Number) {
+              throw new Error('RADARCTAN command requires a number');
+            }
+            const result = Math.atan((evaluatedValue as NumberValue).value);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `RADARCTAN ${value.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'ARCSIN',
+      aliases: ['ASIN'],
+      description: 'Calculate the arcsine in degrees',
+      example: 'ARCSIN 0.5',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (value: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedValue = evaluateArgValue(ctx, value);
+            if (evaluatedValue.type !== ArgumentType.Number) {
+              throw new Error('ARCSIN command requires a number');
+            }
+            const num = (evaluatedValue as NumberValue).value;
+            if (num < -1 || num > 1) {
+              throw new Error('ARCSIN input must be between -1 and 1');
+            }
+            const result = Math.asin(num) * (180 / Math.PI);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `ARCSIN ${value.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'ARCCOS',
+      aliases: ['ACOS'],
+      description: 'Calculate the arccosine in degrees',
+      example: 'ARCCOS 0.5',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (value: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedValue = evaluateArgValue(ctx, value);
+            if (evaluatedValue.type !== ArgumentType.Number) {
+              throw new Error('ARCCOS command requires a number');
+            }
+            const num = (evaluatedValue as NumberValue).value;
+            if (num < -1 || num > 1) {
+              throw new Error('ARCCOS input must be between -1 and 1');
+            }
+            const result = Math.acos(num) * (180 / Math.PI);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `ARCCOS ${value.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'RADARCSIN',
+      aliases: ['RADASIN'],
+      description: 'Calculate the arcsine in radians',
+      example: 'RADARCSIN 0.5',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (value: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedValue = evaluateArgValue(ctx, value);
+            if (evaluatedValue.type !== ArgumentType.Number) {
+              throw new Error('RADARCSIN command requires a number');
+            }
+            const num = (evaluatedValue as NumberValue).value;
+            if (num < -1 || num > 1) {
+              throw new Error('RADARCSIN input must be between -1 and 1');
+            }
+            const result = Math.asin(num);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `RADARCSIN ${value.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'RADARCCOS',
+      aliases: ['RADACOS'],
+      description: 'Calculate the arccosine in radians',
+      example: 'RADARCCOS 0.5',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (value: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const evaluatedValue = evaluateArgValue(ctx, value);
+            if (evaluatedValue.type !== ArgumentType.Number) {
+              throw new Error('RADARCCOS command requires a number');
+            }
+            const num = (evaluatedValue as NumberValue).value;
+            if (num < -1 || num > 1) {
+              throw new Error('RADARCCOS input must be between -1 and 1');
+            }
+            const result = Math.acos(num);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `RADARCCOS ${value.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'POW',
+      aliases: ['POWER', '^'],
+      description: 'Raise a number to a power',
+      example: 'POW 2 3  ; returns 8',
+      argumentTypes: [ArgumentType.Number, ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (base: ArgValue, exponent: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const baseVal = evaluateArgValue(ctx, base);
+            const expVal = evaluateArgValue(ctx, exponent);
+            
+            if (baseVal.type !== ArgumentType.Number || expVal.type !== ArgumentType.Number) {
+              throw new Error('POW requires two numbers');
+            }
+            
+            const result = Math.pow(
+              (baseVal as NumberValue).value,
+              (expVal as NumberValue).value
+            );
+            
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `POW ${base.toString()} ${exponent.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'EXP',
+      aliases: [],
+      description: 'Calculate e raised to the power of a number',
+      example: 'EXP 1  ; returns e (≈2.71828)',
+      argumentTypes: [ArgumentType.Number],
+      returnTypes: [ArgumentType.Number],
+      createCommand: (exponent: ArgValue) => {
+        return {
+          execute(ctx: Context): ArgValue {
+            const expVal = evaluateArgValue(ctx, exponent);
+            
+            if (expVal.type !== ArgumentType.Number) {
+              throw new Error('EXP requires a number');
+            }
+            
+            const result = Math.exp((expVal as NumberValue).value);
+            return new NumberValue(result);
+          },
+          toString(): string {
+            return `EXP ${exponent.toString()}`;
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
+      name: 'PI',
+      aliases: [],
+      description: 'The mathematical constant π (3.14159...)',
+      example: 'PRINT PI',
+      argumentTypes: [],
+      returnTypes: [ArgumentType.Number],
+      createCommand: () => {
+        return {
+          execute(): ArgValue {
+            return new NumberValue(Math.PI);
+          },
+          toString(): string {
+            return 'PI';
+          }
+        };
+      },
+      category: CommandCategory.MathsFunctions
+    },
+    {
       name: 'WAIT',
       aliases: ['WT'],
       description: 'Pause for a specified duration in milliseconds',
